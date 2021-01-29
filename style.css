@@ -14,19 +14,24 @@ main {
   /* align-items: center; */
   /* justify-content: center; */
   flex-direction: column;
-  margin: 1rem 20rem 1rem 20rem;
+  margin: 1rem 1rem;
   /* padding: 2rem; */
 }
 
 section {
   padding: 2rem;
+  line-height: 1rem;
+}
+
+h1 {
+  margin-bottom: 1rem;
 }
 
 footer {
   display: flex;
   flex-direction: column;
   /* align-items: center; */
-  margin: 1rem 20rem 1rem 20rem;
+  margin: 1rem 1rem;
   font-size: 0.8rem;
 }
 
@@ -36,30 +41,33 @@ footer {
   padding: 2rem;
   display: flex;
   width: 100%;
-  box-shadow: 2px 2px 10px rgba(122, 122, 122, 0.2);
+  /* box-shadow: 2px 2px 20px rgba(122, 122, 122, 1); */
 }
 
 .heading h1 {
   font-weight: bold;
   color: #000;
+  margin: 0;
 }
 
-/* p {
-  margin: 5px;
+p {
+  max-width: 100ch;
 }
- */
+
 
 .menu ul {
   list-style-type: none;
   background-color: #0FA3B1;
   color: #fff;
   display: flex;
+  flex-wrap: wrap;
+
   /* padding: 1.1rem 2rem */
 }
 
 a {
   text-decoration: none;
-  color: #fff;
+  color: #0FA3B1;
 }
 
 .menu ul li a {
@@ -70,6 +78,7 @@ a {
   width: 10rem;
   display: flex;
   justify-content: left;
+  color: #fff
 }
 
 .menu ul li a.active {
@@ -82,4 +91,10 @@ a {
   background-color: #D9E5D6;
   color: #000;
   /* padding: 1rem 1.1rem 1rem 2rem; */
+}
+
+section li {
+  margin-left: 2rem;
+  color: #000;
+  line-height: 1.1rem;
 }

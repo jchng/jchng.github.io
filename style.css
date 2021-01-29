@@ -1,0 +1,39 @@
+﻿* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inconsolata', monospace;
+  /* font-family: 'Roboto', sans-serif; */
+  /* color: white; */
+}
+
+main {
+  min-height: 100vh;
+  background: #EDDEA4;
+  display: flex;
+  /* align-items: center; */
+  /* justify-content: center; */
+  flex-direction: column;
+  margin: 2rem 20rem 2rem 20rem;
+  /* padding: 2rem; */
+}
+
+section {
+  margin: 5px;
+  padding: 2rem;
+}
+
+.heading {
+  background-color: #FF9B42;
+  color: #000;
+  padding: 2rem;
+  display: flex;
+  width: 100%;
+  box-shadow: 2px 2px 10px rgba(122, 122, 122, 0.2);
+  /* overflow: hidden; */
+}
+
+/* p {
+  margin: 5px;
+}
+ */

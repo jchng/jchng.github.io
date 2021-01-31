@@ -90,6 +90,7 @@ a {
 .menu ul li a:hover:not(.active) {
   background-color: #D9E5D6;
   color: #000;
+  transition-duration: 100ms;
   /* padding: 1rem 1.1rem 1rem 2rem; */
 }
 
@@ -97,4 +98,21 @@ section li {
   margin-left: 2rem;
   color: #000;
   line-height: 1.1rem;
+}
+
+/* Referenced from */
+/* https://www.benmarshall.me/responsive-iframes/ */
+.iframe-container {
+  padding-top: 56.25%;
+  position: relative;
+}
+
+.iframe-container iframe {
+  border: 0;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  max-width: 100ch;
 }

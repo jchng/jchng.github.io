@@ -15,7 +15,7 @@
 
 main {
   min-height: 80vh;
-  background: #EDDEA4;
+  background: #fff3c7;
   display: flex;
   /* align-items: center; */
   /* justify-content: center; */
@@ -60,8 +60,10 @@ footer {
 .heading h1 {
   padding: 0;
   font-weight: bold;
-  color: #000;
+  color: #ffffff;
   margin: 0;
+  text-shadow: 2px 2px 2px #00000080;
+  /* letter-spacing: 0.5ch; */
 }
 
 /* p {
@@ -90,12 +92,12 @@ a {
   padding: 1rem 2rem 1rem 2rem;
   width: 10rem;
   display: flex;
-  justify-content: left;
+  justify-content: center;
   color: #fff
 }
 
 .menu ul li a.active {
-  background-color: #EDDEA4;
+  background-color: #fff3c7;
   color: #000;
   /* padding: 1rem 1.1rem 1rem 2rem; */
 }
@@ -136,7 +138,8 @@ section li {
 }
 
 .gallery div {
-  justify-content: center;
+  /* justify-content: center; */
+  /* align-content: center; */
   max-width: 100ch;
   display: flex;
   flex-wrap: wrap;

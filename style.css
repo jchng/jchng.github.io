@@ -142,3 +142,7 @@ section li {
     transition-duration: 1s;
   }
 }
+
+.column div {
+  margin-right: 1rem;
+}

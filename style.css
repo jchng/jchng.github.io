@@ -64,12 +64,11 @@ footer {
 
 }
 
-.heading:hover {
+.heading:active {
   padding-top: 15rem;
   padding-bottom: 15rem;
   transition-duration: 1s;
 }
-
 
 .heading h1 {
   padding: 0;

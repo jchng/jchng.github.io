@@ -2,26 +2,14 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* font-family: 'Inconsolata', monospace; */
-  /* font-family: 'Roboto', sans-serif; */
-  /* font-family: 'IBM Plex Sans', sans-serif; */
-  /* font-family: 'Open Sans', sans-serif; */
-  /* font-family: 'Work Sans', sans-serif; */
   font-family: 'Libre Franklin', sans-serif;
-  /* color: white; */
-  /* align-items: center; */
-
 }
 
 main {
   min-height: 80vh;
   background: #fff3c7;
   display: flex;
-  /* align-items: center; */
-  /* justify-content: center; */
   flex-direction: column;
-  /* margin: 1rem 1rem; */
-  /* padding: 0 10rem 0 10rem; */
   max-width: 65rem;
   margin: 0 auto;
 }
@@ -54,14 +42,10 @@ footer {
   display: flex;
   width: 100%;
   justify-content: center;
-  /* background-image: url("./img/img8.jpg"); */
   background-repeat:no-repeat;
   background-size: 100%;
   transition-duration: 0.5s;
-  /* transform: translateY(3.2rem); */
-  /* overflow: hidden; */
   position: relative;
-
 }
 
 .heading:active {
@@ -75,14 +59,8 @@ footer {
   font-weight: bold;
   color: #ffffff;
   margin: 0;
-  /* filter: blur(0); */
   text-shadow: 2px 2px 2px #00000080;
-  /* letter-spacing: 0.5ch; */
 }
-
-/* p {
-  max-width: 70rem;
-} */
 
 .menu ul {
   list-style-type: none;
@@ -91,7 +69,6 @@ footer {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  /* padding: 1.1rem 2rem */
 }
 
 a {
@@ -100,9 +77,6 @@ a {
 }
 
 .menu ul li a {
-  /* margin-right: 1rem; */
-  /* margin-left: */
-  /* background-color: #000; */
   padding: 1rem 2rem 1rem 2rem;
   width: 10rem;
   display: flex;
@@ -113,14 +87,12 @@ a {
 .menu ul li a.active {
   background-color: #fff3c7;
   color: #000;
-  /* padding: 1rem 1.1rem 1rem 2rem; */
 }
 
 .menu ul li a:hover:not(.active) {
   background-color: #D9E5D6;
   color: #000;
   transition-duration: 100ms;
-  /* padding: 1rem 1.1rem 1rem 2rem; */
 }
 
 
@@ -153,8 +125,6 @@ section li {
 }
 
 .gallery div {
-  /* justify-content: center; */
-  /* align-content: center; */
   max-width: 100ch;
   display: flex;
   flex-wrap: wrap;
@@ -171,5 +141,4 @@ section li {
     padding-bottom: 10rem;
     transition-duration: 1s;
   }
-  
 }

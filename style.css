@@ -42,7 +42,7 @@ footer {
   display: flex;
   width: 100%;
   justify-content: center;
-  background-repeat:no-repeat;
+  background-repeat: no-repeat;
   background-size: 100%;
   transition-duration: 0.5s;
   position: relative;
@@ -94,7 +94,6 @@ a {
   color: #000;
   transition-duration: 100ms;
 }
-
 
 section li {
   margin-left: 2rem;

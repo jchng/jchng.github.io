@@ -145,3 +145,18 @@ section li {
 .column div {
   margin-right: 1rem;
 }
+
+.wsp-logo {
+  min-height: 80px;
+  min-width: 80px;
+  background-color: #ff372f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wsp-logo img {
+  max-width: 60px;
+  margin-top: 10px;
+  filter: invert(100%);
+}

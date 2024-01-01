@@ -117,10 +117,39 @@ section li {
   max-width: 100ch;
 }
 
+section.gallery {
+  padding-right: 1rem;
+}
+
 .gallery div img {
   padding-right: 1rem;
   padding-bottom: 1rem;
-  max-width: 15rem;
+  max-width: 100%;
+
+  /* Custom, iPhone Retina */
+  @media only screen and (min-width : 320px) {
+    max-width: 100%;
+  }
+
+  /* Extra Small Devices, Phones */
+  @media only screen and (min-width : 480px) {
+    max-width: 50%;
+  }
+
+  /* Small Devices, Tablets */
+  @media only screen and (min-width : 768px) {
+    max-width: 33.3%;
+  }
+
+  /* Medium Devices, Desktops */
+  @media only screen and (min-width : 992px) {
+    max-width: 25%;
+  }
+
+  /* Large Devices, Wide Screens */
+  @media only screen and (min-width : 1200px) {
+    max-width: 25%;
+  }
 }
 
 .gallery div {
@@ -129,7 +158,7 @@ section li {
   flex-wrap: wrap;
 }
 
-@media screen and (max-width: 700px) {
+@media screen and (max-width: 768px) {
   .menu ul li a {
     padding: 0.5rem 0.4rem;
     width: auto;

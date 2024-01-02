@@ -41,5 +41,5 @@
   <p>Melbourne, Australia</p>
 </footer>
 <script type="module" src="./script.js"></script>
-<script type="module" src="./populateGallery.js"></script>
+<script type="module">import { fetchImagesInChunks } from "./populateGallery.js"; window.fetchImagesInChunks = fetchImagesInChunks;</script>
 </html>

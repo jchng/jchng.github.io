@@ -158,6 +158,16 @@ section.gallery {
   flex-wrap: wrap;
 }
 
+.gallery .load-button {
+  display: flex;
+  height: 3rem;
+  margin-right: 1rem;
+  padding-top: 0.5rem;
+  justify-content: center;
+  color: #fff;
+  background-color: #0FA3B1;
+}
+
 @media screen and (max-width: 768px) {
   .menu ul li a {
     padding: 0.5rem 0.4rem;

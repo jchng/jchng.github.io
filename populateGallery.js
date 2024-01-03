@@ -17,7 +17,7 @@ export const fetchImagesInChunks = () => {
         const filename = (
             R2_THUMBNAIL_PATH_SUFFIX_KEY +
             zeroPad(IMG_FETCH_LIMIT - (lastImgId + fetchedCount), 3)
-            + ".jpg"
+            + ".webp"
         );
         fetchedCount++;
         imgElement.src = BASE_R2_BUCKET_URL + filename;

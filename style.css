@@ -168,6 +168,12 @@ section.gallery {
   background-color: #0FA3B1;
 }
 
+.gallery .load-button:hover:not(.active) {
+  background-color: #D9E5D6;
+  color: #000;
+  transition-duration: 100ms;
+}
+
 @media screen and (max-width: 768px) {
   .menu ul li a {
     padding: 0.5rem 0.4rem;

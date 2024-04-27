@@ -2,7 +2,7 @@ import { BASE_R2_BUCKET_URL, R2_THUMBNAIL_PATH_SUFFIX_KEY } from './constants.js
 import { imgCountFromBucket, zeroPad } from './utils.js';
 
 const IMG_FETCH_LIMIT = imgCountFromBucket;
-const IMG_FETCH_CHUNK_SIZE = 8;
+const IMG_FETCH_CHUNK_SIZE = 12;
 
 export const fetchImagesInChunks = () => {
     const imageContainer = document.getElementById('imageContainer');

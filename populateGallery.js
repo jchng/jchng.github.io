@@ -31,16 +31,4 @@ export const fetchImagesInChunks = () => {
     }
 }
 
-const autoFetchOnScroll = () => {
-    window.onscroll = function(ev) {
-        if (
-            (window.innerHeight + Math.round(window.scrollY))
-            >= document.body.offsetHeight - 500
-        ) {
-            fetchImagesInChunks();
-        }
-    };
-}
-
 fetchImagesInChunks();
-autoFetchOnScroll();

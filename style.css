@@ -16,7 +16,7 @@ main {
 
 section {
   padding: 2rem;
-  line-height: 2rem;
+  line-height: 1.75rem;
 }
 
 h1 {
@@ -100,21 +100,22 @@ section li {
   color: #000;
 }
 
-/* Referenced from */
-/* https://www.benmarshall.me/responsive-iframes/ */
 .iframe-container {
-  padding-top: 56.25%;
   position: relative;
+  width: 100%;
+  /* max-width: 800px; */
+  height: 0;
+  padding-top: 120%;
+  margin: auto;
 }
 
 .iframe-container iframe {
-  border: 0;
-  height: 100%;
-  left: 0;
   position: absolute;
   top: 0;
+  left: 0;
   width: 100%;
-  max-width: 100ch;
+  height: 100%;
+  border: none;
 }
 
 section.gallery {

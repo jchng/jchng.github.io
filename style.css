@@ -73,7 +73,7 @@ footer {
 
 a {
   text-decoration: none;
-  color: #0FA3B1;
+  color: #065960;
 }
 
 .menu ul li a {
@@ -205,4 +205,23 @@ section.gallery {
   max-width: 50px;
   margin-top: 10px;
   filter: invert(100%);
+}
+
+section.blog-section {
+  line-height: 1.75rem;
+  p {
+    max-width: 70%;
+    text-align: justify;
+  }
+
+  .paragraph-image {
+    display: flex;
+    position: relative;
+  }
+
+  .paragraph-image img {
+    position: absolute;
+    max-width: 25%;
+    right: 0;
+  }
 }

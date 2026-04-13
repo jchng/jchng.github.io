@@ -1,0 +1,144 @@
+.rsvp-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.rsvp-panel {
+  background: #fff9e8;
+  border: 1px solid #f1dfb1;
+  padding: 1.5rem;
+}
+
+.rsvp-panel:first-child {
+  grid-column: 1 / -1;
+}
+
+.rsvp-panel h2 {
+  margin-bottom: 0.75rem;
+}
+
+.panel-intro {
+  margin-bottom: 1rem;
+}
+
+.rsvp-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 36rem;
+}
+
+.form-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.form-row label {
+  font-weight: bold;
+}
+
+.form-row input[type="text"],
+.form-row input[type="time"] {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #0FA3B1;
+  background: #fff;
+  color: #000;
+  font-size: 1rem;
+}
+
+.checkbox-row {
+  display: block;
+}
+
+.checkbox-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: normal;
+}
+
+.checkbox-row input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.input-hint,
+.suggestion-text,
+.empty-state {
+  font-size: 0.95rem;
+}
+
+.suggestion-text {
+  min-height: 1.5rem;
+  color: #065960;
+}
+
+.suggestion-heading {
+  margin: 0 0 0.2rem;
+}
+
+.suggestion-list {
+  margin-left: 1.2rem;
+}
+
+.submit-button {
+  width: fit-content;
+  padding: 0.85rem 1.4rem;
+  border: none;
+  background: #0FA3B1;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background: #065960;
+}
+
+.status-list {
+  list-style-type: none;
+}
+
+.status-list li {
+  margin-left: 0;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #f1dfb1;
+}
+
+.status-list li:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.status-name {
+  font-weight: bold;
+}
+
+.status-heading {
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-meta {
+  color: #065960;
+}
+
+.late-pill {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0 0.45rem;
+  background: #ff5050;
+  color: #fff;
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+@media screen and (max-width: 768px) {
+  .rsvp-layout {
+    grid-template-columns: 1fr;
+  }
+}

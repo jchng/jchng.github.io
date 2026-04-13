@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./housewarming.css" />
 </head>
 
 <body>
@@ -28,7 +29,7 @@
         </h1>
       </div>
     </div>
-    <section>
+    <section class="housewarming-page">
       <h1>
         Housewarming 🎉
       </h1>
@@ -42,7 +43,7 @@
       <ul>
         <li>Date: TBD</li>
         <li>Time: Anytime from 11 am, wrapping up by 8 pm</li>
-        <li>Location:</li>
+        <li>Location: shared separately</li>
       </ul>
 
       <h1>
@@ -53,6 +54,52 @@
         <li>Snacks and drinks are welcome but not required</li>
         <li>Please RSVP so I know roughly how many people are coming</li>
       </ul>
+
+      <h1>
+        RSVP
+      </h1>
+      <div class="rsvp-layout">
+        <div class="rsvp-panel">
+          <form id="rsvpForm" class="rsvp-form">
+            <div class="form-row">
+              <label for="rsvpName">Name</label>
+              <input id="rsvpName" name="name" type="text" required autocomplete="name" />
+            </div>
+
+            <div class="form-row">
+              <label for="rsvpArrivalTime">Arrival time</label>
+              <input id="rsvpArrivalTime" name="arrival_time" type="time" required />
+            </div>
+
+            <div class="form-row checkbox-row">
+              <label for="rsvpLikelyLate">
+                <input id="rsvpLikelyLate" name="likely_late" type="checkbox" />
+                Likely late!
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label for="rsvpPotluckItem">Potluck - What might you bring?</label>
+              <input id="rsvpPotluckItem" name="potluck_item" type="text" autocomplete="off" />
+              <p class="input-hint">Optional. No pressure.</p>
+              <div id="potluckSuggestion" class="suggestion-text" aria-live="polite"></div>
+            </div>
+
+            <button type="submit" class="submit-button">Add RSVP</button>
+          </form>
+        </div>
+
+        <div class="rsvp-panel">
+          <h2>People coming</h2>
+          <ul id="attendeeList" class="status-list"></ul>
+        </div>
+
+        <div class="rsvp-panel">
+          <h2>Potluck list</h2>
+          <p class="panel-intro">Possible contributions. No names attached publically!</p>
+          <ul id="potluckList" class="status-list"></ul>
+        </div>
+      </div>
     </section>
   </main>
 </body>
@@ -61,5 +108,6 @@
   <p>Melbourne, Australia</p>
 </footer>
 <script type="module" src="./script.js"></script>
+<script type="module" src="./housewarming.js"></script>
 
 </html>

@@ -11,19 +11,23 @@ const DEFAULT_STATE = {
     { label: 'sparkling water' },
   ],
 };
+const ALWAYS_LATE_NAMES = ['Sushen', 'Hieu', 'Sherrie'];
 
 const form = document.getElementById('rsvpForm');
 const attendeeList = document.getElementById('attendeeList');
 const potluckList = document.getElementById('potluckList');
+const nameInput = document.getElementById('rsvpName');
+const likelyLateInput = document.getElementById('rsvpLikelyLate');
 const potluckInput = document.getElementById('rsvpPotluckItem');
 const suggestionText = document.getElementById('potluckSuggestion');
 let state = cloneDefaultState();
 
-if (form && attendeeList && potluckList && potluckInput && suggestionText) {
+if (form && attendeeList && potluckList && nameInput && likelyLateInput && potluckInput && suggestionText) {
   state = loadState();
 
   render();
   updateSuggestion('');
+  syncLikelyLateRule('');
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -51,7 +55,12 @@ if (form && attendeeList && potluckList && potluckInput && suggestionText) {
     saveState(state);
     render();
     form.reset();
+    syncLikelyLateRule('');
     updateSuggestion('');
+  });
+
+  nameInput.addEventListener('input', (event) => {
+    syncLikelyLateRule(event.target.value);
   });
 
   potluckInput.addEventListener('input', (event) => {
@@ -151,6 +160,22 @@ function updateSuggestion(rawValue) {
     <p class="suggestion-heading">May already be on the list!</p>
     <ul class="suggestion-list">${labels}</ul>
   `;
+}
+
+function syncLikelyLateRule(rawName) {
+  const shouldForceLate = isLikelyLateName(rawName);
+  likelyLateInput.checked = shouldForceLate;
+  likelyLateInput.disabled = shouldForceLate;
+}
+
+function isLikelyLateName(rawName) {
+  const normalizedName = normalizeText(rawName);
+  if (!normalizedName) {
+    return false;
+  }
+
+  const words = normalizedName.split(' ');
+  return ALWAYS_LATE_NAMES.some((name) => words.includes(normalizeText(name)));
 }
 
 function findSimilarItems(query, potluckItems) {

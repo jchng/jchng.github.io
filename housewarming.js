@@ -101,7 +101,7 @@ if (
         editingAttendeeId = lookupResult.attendee.id;
         openFormMode('editing');
         fillFormFromAttendee(lookupResult.attendee);
-        editModeNotice.textContent = 'Edit mode: updating your existing RSVP.';
+        editModeNotice.textContent = 'Edit mode: Updating your existing RSVP.';
         lookupStatus.textContent = '';
         return;
       }

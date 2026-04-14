@@ -3,10 +3,6 @@ services:
     build:
       context: ./housewarming_backend
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    environment:
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
-      DJANGO_DB_PATH: /app/data/db.sqlite3
-      DJANGO_DEBUG: "1"
     ports:
       - "8000:8000"
     volumes:

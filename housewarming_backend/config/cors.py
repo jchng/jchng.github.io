@@ -22,4 +22,6 @@ class LocalCorsMiddleware:
         return response
 
     def _is_allowed_origin(self, origin):
-        return any(origin.startswith(prefix) for prefix in settings.CORS_ALLOWED_ORIGIN_PREFIXES)
+        return origin in settings.CORS_ALLOWED_ORIGINS or any(
+            origin.startswith(prefix) for prefix in settings.CORS_ALLOWED_ORIGIN_PREFIXES
+        )

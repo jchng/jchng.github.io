@@ -1,15 +1,30 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = BASE_DIR / "data" / "db.sqlite3"
+
+load_dotenv(BASE_DIR / ".env")
+
+
+def env_bool(name, default=False):
+    return os.environ.get(name, "1" if default else "0").lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name, default=""):
+    raw_value = os.environ.get(name, default)
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
 
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-dev-only-key-change-before-production",
 )
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,[::1]").split(",")
+DEBUG = env_bool("DJANGO_DEBUG", default=True)
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,[::1]")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -85,9 +100,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGIN_PREFIXES = (
-    "http://localhost:",
-    "https://localhost:",
-    "http://127.0.0.1:",
-    "https://127.0.0.1:",
+CORS_ALLOWED_ORIGINS = env_list("DJANGO_CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGIN_PREFIXES = tuple(
+    env_list(
+        "DJANGO_CORS_ALLOWED_ORIGIN_PREFIXES",
+        "http://localhost:,https://localhost:,http://127.0.0.1:,https://127.0.0.1:",
+    )
 )

@@ -15,11 +15,19 @@ def _json_response(payload, status=200):
     return JsonResponse(payload, status=status)
 
 
+def _is_duplicate_email_error(error):
+    message = str(error).lower()
+    return (
+        "unique_non_blank_rsvp_email" in message
+        or "unique constraint failed: rsvp_rsvp.email" in message
+    )
+
+
 def _serialize_public_attendee(rsvp):
     return {
         "id": rsvp.id,
         "name": rsvp.name,
-        "arrivalTime": rsvp.arrival_time.isoformat(timespec="minutes"),
+        "arrivalTime": rsvp.arrival_time.isoformat(timespec="minutes") if rsvp.arrival_time else "",
         "attendanceStatus": rsvp.attendance_status,
         "likelyLate": rsvp.likely_late,
     }
@@ -77,17 +85,17 @@ def _clean_payload(payload):
 
     if not name:
         raise ValidationError("Name is required.")
-    if not arrival_time:
-        raise ValidationError("Arrival time is required.")
     if attendance_status not in Rsvp.AttendanceStatus.values:
-        raise ValidationError("Attendance status must be going or maybe.")
+        raise ValidationError("Attendance status must be going, maybe, or can't go.")
+    if attendance_status != Rsvp.AttendanceStatus.CANT_GO and not arrival_time:
+        raise ValidationError("Arrival time is required.")
 
     return {
         "name": name,
         "email": email,
-        "arrival_time": _parse_time(arrival_time),
+        "arrival_time": _parse_time(arrival_time) if arrival_time else None,
         "attendance_status": attendance_status,
-        "likely_late": likely_late,
+        "likely_late": False if attendance_status == Rsvp.AttendanceStatus.CANT_GO else likely_late,
         "potluck_item": potluck_item,
         "notes": notes,
     }
@@ -125,13 +133,21 @@ def rsvp_list(request):
 
     try:
         rsvp = Rsvp.objects.create(**payload)
-    except IntegrityError:
+    except IntegrityError as error:
+        if _is_duplicate_email_error(error):
+            return _json_response(
+                {
+                    "code": "duplicate_email",
+                    "detail": "That email already exists. Do you want to edit that RSVP instead?",
+                },
+                status=409,
+            )
         return _json_response(
             {
-                "code": "duplicate_email",
-                "detail": "That email already exists. Do you want to edit that RSVP instead?",
+                "code": "save_failed",
+                "detail": "Could not save your RSVP right now. Ask Jarret to check the server migrations.",
             },
-            status=409,
+            status=500,
         )
 
     return _json_response(
@@ -162,13 +178,21 @@ def rsvp_detail(request, rsvp_id):
 
     try:
         rsvp.save()
-    except IntegrityError:
+    except IntegrityError as error:
+        if _is_duplicate_email_error(error):
+            return _json_response(
+                {
+                    "code": "duplicate_email",
+                    "detail": "That email already exists. Do you want to edit that RSVP instead?",
+                },
+                status=409,
+            )
         return _json_response(
             {
-                "code": "duplicate_email",
-                "detail": "That email already exists. Do you want to edit that RSVP instead?",
+                "code": "save_failed",
+                "detail": "Could not save your RSVP right now. Ask Jarret to check the server migrations.",
             },
-            status=409,
+            status=500,
         )
 
     return _json_response(

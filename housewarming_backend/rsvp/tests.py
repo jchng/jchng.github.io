@@ -104,6 +104,29 @@ class RsvpApiTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["code"], "duplicate_email")
 
+    def test_create_cant_go_rsvp_allows_blank_arrival_time(self):
+        response = self.client.post(
+            reverse("rsvp-list"),
+            data=json.dumps(
+                {
+                    "name": "Cannot Make It",
+                    "email": "cantgo@example.com",
+                    "arrival_time": "",
+                    "attendance_status": "cant_go",
+                    "likely_late": True,
+                    "potluck_item": "",
+                    "notes": "Sorry!",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        rsvp = Rsvp.objects.get(email="cantgo@example.com")
+        self.assertIsNone(rsvp.arrival_time)
+        self.assertEqual(rsvp.attendance_status, "cant_go")
+        self.assertFalse(rsvp.likely_late)
+
     def test_update_rsvp_allows_email_change(self):
         rsvp = Rsvp.objects.create(
             name="Before",

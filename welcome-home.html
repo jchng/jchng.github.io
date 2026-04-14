@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./housewarming.css" />
 </head>
 
-<body data-rsvp-api-base="http://api.jchng.com/api">
+<body data-rsvp-api-base="http://localhost:8000/api">
   <main>
     <div class="menubar">
       <div class="menu">
@@ -95,18 +95,6 @@
             </div>
 
             <div class="form-row">
-              <label for="rsvpArrivalTime">Arrival time</label>
-              <input id="rsvpArrivalTime" name="arrival_time" type="time" required />
-            </div>
-
-            <div class="form-row checkbox-row">
-              <label for="rsvpLikelyLate">
-                <input id="rsvpLikelyLate" name="likely_late" type="checkbox" />
-                Likely late!
-              </label>
-            </div>
-
-            <div class="form-row">
               <span>Status</span>
               <div class="status-toggle" role="radiogroup" aria-label="RSVP status">
                 <label class="status-option">
@@ -124,7 +112,19 @@
               </div>
             </div>
 
-            <div class="form-row">
+            <div id="arrivalTimeRow" class="form-row">
+              <label for="rsvpArrivalTime">Arrival time</label>
+              <input id="rsvpArrivalTime" name="arrival_time" type="time" required />
+            </div>
+
+            <div id="likelyLateRow" class="form-row checkbox-row">
+              <label for="rsvpLikelyLate">
+                <input id="rsvpLikelyLate" name="likely_late" type="checkbox" />
+                Likely late!
+              </label>
+            </div>
+
+            <div id="potluckRow" class="form-row">
               <label for="rsvpPotluckItem">Potluck - What might you bring?</label>
               <input id="rsvpPotluckItem" name="potluck_item" type="text" autocomplete="off" />
               <p class="input-hint">Optional. No pressure.</p>

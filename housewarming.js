@@ -21,13 +21,17 @@ const nameInput = document.getElementById('rsvpName');
 const emailInput = document.getElementById('rsvpEmail');
 const emailHint = document.getElementById('emailHint');
 const arrivalTimeInput = document.getElementById('rsvpArrivalTime');
+const arrivalTimeRow = document.getElementById('arrivalTimeRow');
+const likelyLateRow = document.getElementById('likelyLateRow');
 const likelyLateInput = document.getElementById('rsvpLikelyLate');
+const potluckRow = document.getElementById('potluckRow');
 const potluckInput = document.getElementById('rsvpPotluckItem');
 const notesInput = document.getElementById('rsvpNotes');
 const suggestionText = document.getElementById('potluckSuggestion');
 const editModeNotice = document.getElementById('editModeNotice');
 const submitButton = document.getElementById('submitButton');
 const switchToEditButton = document.getElementById('switchToEditButton');
+const attendanceStatusInputs = Array.from(form?.querySelectorAll('input[name="attendance_status"]') || []);
 
 let state = cloneDefaultState();
 let currentMode = 'chooser';
@@ -130,16 +134,16 @@ if (
     const potluckItem = (formData.get('potluck_item') || '').toString().trim();
     const notes = (formData.get('notes') || '').toString().trim();
 
-    if (!name || !arrivalTime) {
+    if (!name || (attendanceStatus !== 'cant_go' && !arrivalTime)) {
       return;
     }
 
     const payload = {
       name,
       email,
-      arrival_time: arrivalTime,
+      arrival_time: attendanceStatus === 'cant_go' ? '' : arrivalTime,
       attendance_status: attendanceStatus,
-      likely_late: likelyLate,
+      likely_late: attendanceStatus === 'cant_go' ? false : likelyLate,
       potluck_item: potluckItem,
       notes,
     };
@@ -175,6 +179,10 @@ if (
 
   nameInput.addEventListener('input', (event) => {
     syncLikelyLateRule(event.target.value);
+  });
+
+  attendanceStatusInputs.forEach((input) => {
+    input.addEventListener('change', syncAttendanceFields);
   });
 }
 
@@ -389,6 +397,7 @@ function resetLookup() {
 function resetFormFields() {
   form.reset();
   suggestionText.innerHTML = '';
+  syncAttendanceFields();
 }
 
 function resetFormState() {
@@ -408,7 +417,7 @@ function resetFormState() {
 function fillFormFromAttendee(attendee) {
   nameInput.value = attendee.name;
   emailInput.value = attendee.email;
-  arrivalTimeInput.value = attendee.arrivalTime;
+  arrivalTimeInput.value = attendee.arrivalTime || '';
   const attendanceStatusInput = form.querySelector(`input[name="attendance_status"][value="${attendee.attendanceStatus || 'going'}"]`);
   if (attendanceStatusInput) {
     attendanceStatusInput.checked = true;
@@ -417,7 +426,40 @@ function fillFormFromAttendee(attendee) {
   notesInput.value = attendee.notes || '';
   likelyLateInput.checked = attendee.likelyLate;
   syncLikelyLateRule(attendee.name);
+  syncAttendanceFields();
   updateSuggestion(potluckInput.value);
+}
+
+function syncAttendanceFields() {
+  const attendanceStatus = form.querySelector('input[name="attendance_status"]:checked')?.value || 'going';
+  const isCantGo = attendanceStatus === 'cant_go';
+
+  setRowVisibility(arrivalTimeRow, !isCantGo);
+  setRowVisibility(likelyLateRow, !isCantGo);
+  setRowVisibility(potluckRow, !isCantGo);
+  arrivalTimeInput.required = !isCantGo;
+  arrivalTimeInput.disabled = isCantGo;
+  potluckInput.disabled = isCantGo;
+
+  if (isCantGo) {
+    arrivalTimeInput.value = '';
+    likelyLateInput.checked = false;
+    likelyLateInput.disabled = true;
+    potluckInput.value = '';
+    suggestionText.innerHTML = '';
+    return;
+  }
+
+  syncLikelyLateRule(nameInput.value);
+}
+
+function setRowVisibility(element, isVisible) {
+  if (!element) {
+    return;
+  }
+
+  element.hidden = !isVisible;
+  element.style.display = isVisible ? '' : 'none';
 }
 
 function syncLikelyLateRule(rawName) {

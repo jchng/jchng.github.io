@@ -9,7 +9,7 @@ class Rsvp(models.Model):
 
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True)
-    arrival_time = models.TimeField()
+    arrival_time = models.TimeField(blank=True, null=True)
     attendance_status = models.CharField(
         max_length=16,
         choices=AttendanceStatus.choices,

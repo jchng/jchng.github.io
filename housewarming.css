@@ -36,13 +36,14 @@
   flex-wrap: wrap;
 }
 
-.hidden-panel {
-  display: none;
-}
-
 .form-row {
   display: grid;
   gap: 0.35rem;
+}
+
+.hidden-panel,
+.form-row.hidden-panel {
+  display: none;
 }
 
 .form-row label {

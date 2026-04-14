@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./housewarming.css" />
 </head>
 
-<body data-rsvp-api-base="https://api.jchng.com/api">
+<body data-rsvp-api-base="http://localhost:8000/api">
   <main>
     <div class="menubar">
       <div class="menu">
@@ -39,11 +39,13 @@
       <h1>
         Details
       </h1>
-      <ul>
-        <li>Date: Sometime in June</li>
-        <li>Time: 11 am, wrapping up by 7 pm</li>
-        <li>Location: shared separately</li>
+      <p id="privateAccessNotice" class="edit-mode-notice">Private details are available from the invite link.</p>
+      <ul id="privateEventDetails" class="hidden-panel">
+        <li>Date: <span id="eventDateLabel"></span></li>
+        <li>Time: <span id="eventTimeLabel"></span></li>
+        <li>Location: <span id="eventLocation"></span></li>
       </ul>
+      <p id="eventDetailsNote" class="panel-intro hidden-panel"></p>
 
       <h1>
         Things to know
@@ -57,7 +59,8 @@
       <h1>
         RSVP
       </h1>
-      <div class="rsvp-layout">
+      <p id="rsvpAccessNotice" class="edit-mode-notice">RSVP, attendee updates, and private details need a valid invite link.</p>
+      <div id="rsvpLayout" class="rsvp-layout hidden-panel">
         <div class="rsvp-panel">
           <div id="rsvpChooser" class="rsvp-chooser">
             <button id="showAddRsvpButton" type="button" class="submit-button">RSVP</button>

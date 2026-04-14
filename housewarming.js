@@ -4,7 +4,16 @@ const DEFAULT_STATE = {
 };
 const ALWAYS_LATE_NAMES = ['Sushen', 'Hieu', 'Sherrie'];
 const API_BASE = resolveApiBase();
+const INVITE_TOKEN = resolveInviteToken();
 
+const privateAccessNotice = document.getElementById('privateAccessNotice');
+const privateEventDetails = document.getElementById('privateEventDetails');
+const eventDateLabel = document.getElementById('eventDateLabel');
+const eventTimeLabel = document.getElementById('eventTimeLabel');
+const eventLocation = document.getElementById('eventLocation');
+const eventDetailsNote = document.getElementById('eventDetailsNote');
+const rsvpAccessNotice = document.getElementById('rsvpAccessNotice');
+const rsvpLayout = document.getElementById('rsvpLayout');
 const chooser = document.getElementById('rsvpChooser');
 const showAddRsvpButton = document.getElementById('showAddRsvpButton');
 const showEditRsvpButton = document.getElementById('showEditRsvpButton');
@@ -37,8 +46,17 @@ let state = cloneDefaultState();
 let currentMode = 'chooser';
 let editingAttendeeId = null;
 let forcedLateMode = false;
+let hasInviteAccess = false;
 
 if (
+  privateAccessNotice &&
+  privateEventDetails &&
+  eventDateLabel &&
+  eventTimeLabel &&
+  eventLocation &&
+  eventDetailsNote &&
+  rsvpAccessNotice &&
+  rsvpLayout &&
   chooser &&
   showAddRsvpButton &&
   showEditRsvpButton &&
@@ -64,7 +82,7 @@ if (
   switchToEditButton
 ) {
   render();
-  showChooser();
+  lockPrivateSections();
   initializePage();
 
   showAddRsvpButton.addEventListener('click', () => {
@@ -187,16 +205,30 @@ if (
 }
 
 async function initializePage() {
-  attendeeCount.textContent = 'Loading RSVPs...';
+  if (!INVITE_TOKEN) {
+    lockPrivateSections('Private details are available from the invite link.');
+    return;
+  }
 
   try {
-    const summary = await fetchSummary();
+    const [eventDetailsPayload, summary] = await Promise.all([
+      fetchEventDetails(),
+      fetchSummary(),
+    ]);
+
+    hasInviteAccess = true;
+    renderEventDetails(eventDetailsPayload.event);
     state = normalizeSummary(summary);
     render();
+    unlockPrivateSections();
+    showChooser();
   } catch (error) {
-    attendeeCount.textContent = 'Can\'t RSVPs, ask Jarret to fix it.';
-    attendeeList.innerHTML = '<li class="empty-state">Something broke, ask Jarret to fix it.</li>';
-    potluckList.innerHTML = '<li class="empty-state">Something broke, ask Jarret to fix it.</li>';
+    if (error.code === 'invalid_invite') {
+      lockPrivateSections(error.detail || 'This invite link is missing or invalid.');
+      return;
+    }
+
+    lockPrivateSections('Private details are temporarily unavailable. Ask Jarret to check the server.');
   }
 }
 
@@ -211,6 +243,19 @@ function resolveApiBase() {
   }
 
   return 'http://127.0.0.1:8000/api';
+}
+
+function resolveInviteToken() {
+  const hashToken = window.location.hash.replace(/^#/, '').trim();
+  if (hashToken) {
+    return hashToken;
+  }
+
+  return new URLSearchParams(window.location.search).get('t')?.trim() || '';
+}
+
+async function fetchEventDetails() {
+  return requestJson(`${API_BASE}/event-details/`);
 }
 
 async function fetchSummary() {
@@ -246,11 +291,17 @@ async function updateRsvp(attendeeId, payload) {
 }
 
 async function requestJson(url, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  if (INVITE_TOKEN) {
+    headers.Authorization = `Bearer ${INVITE_TOKEN}`;
+  }
+
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers,
     ...options,
   });
 
@@ -285,6 +336,14 @@ function cloneDefaultState() {
 function render() {
   renderAttendees();
   renderPotluckItems();
+}
+
+function renderEventDetails(event) {
+  eventDateLabel.textContent = event?.dateLabel || '';
+  eventTimeLabel.textContent = event?.timeLabel || '';
+  eventLocation.textContent = event?.location || '';
+  eventDetailsNote.textContent = event?.details || '';
+  eventDetailsNote.classList.toggle('hidden-panel', !eventDetailsNote.textContent);
 }
 
 function renderAttendees() {
@@ -345,13 +404,46 @@ function renderPotluckItems() {
 }
 
 function showChooser() {
+  if (!hasInviteAccess) {
+    return;
+  }
+
   currentMode = 'chooser';
-  chooser.classList.remove('hidden-panel');
-  editLookupForm.classList.add('hidden-panel');
-  form.classList.add('hidden-panel');
-  cancelFormButton.classList.add('hidden-panel');
+  setPanelVisibility(chooser, true);
+  setPanelVisibility(editLookupForm, false);
+  setPanelVisibility(form, false);
+  setPanelVisibility(cancelFormButton, false);
   resetLookup();
   resetFormState();
+}
+
+function lockPrivateSections(message) {
+  hasInviteAccess = false;
+  setPanelVisibility(privateEventDetails, false);
+  setPanelVisibility(rsvpLayout, false);
+  setPanelVisibility(chooser, false);
+  setPanelVisibility(editLookupForm, false);
+  setPanelVisibility(form, false);
+  setPanelVisibility(cancelFormButton, false);
+  attendeeCount.textContent = '';
+  attendeeList.innerHTML = '<li class="empty-state">Private attendee updates are hidden until a valid invite link is used.</li>';
+  potluckList.innerHTML = '<li class="empty-state">Private potluck updates are hidden until a valid invite link is used.</li>';
+  privateAccessNotice.textContent = message;
+  rsvpAccessNotice.textContent = message;
+  privateAccessNotice.classList.remove('hidden-panel');
+  rsvpAccessNotice.classList.remove('hidden-panel');
+  eventDateLabel.textContent = '';
+  eventTimeLabel.textContent = '';
+  eventLocation.textContent = '';
+  eventDetailsNote.textContent = '';
+  eventDetailsNote.classList.add('hidden-panel');
+}
+
+function unlockPrivateSections() {
+  privateAccessNotice.classList.add('hidden-panel');
+  rsvpAccessNotice.classList.add('hidden-panel');
+  setPanelVisibility(privateEventDetails, true);
+  setPanelVisibility(rsvpLayout, true);
 }
 
 function openAddMode() {
@@ -362,10 +454,10 @@ function openAddMode() {
 
 function openEditLookupMode(prefilledEmail = '') {
   currentMode = 'editLookup';
-  chooser.classList.add('hidden-panel');
-  form.classList.add('hidden-panel');
-  editLookupForm.classList.remove('hidden-panel');
-  cancelFormButton.classList.add('hidden-panel');
+  setPanelVisibility(chooser, false);
+  setPanelVisibility(form, false);
+  setPanelVisibility(editLookupForm, true);
+  setPanelVisibility(cancelFormButton, false);
   resetFormState();
   resetLookup();
   editLookupEmail.value = prefilledEmail;
@@ -374,10 +466,10 @@ function openEditLookupMode(prefilledEmail = '') {
 
 function openFormMode(mode) {
   currentMode = mode;
-  chooser.classList.add('hidden-panel');
-  editLookupForm.classList.add('hidden-panel');
-  form.classList.remove('hidden-panel');
-  cancelFormButton.classList.remove('hidden-panel');
+  setPanelVisibility(chooser, false);
+  setPanelVisibility(editLookupForm, false);
+  setPanelVisibility(form, true);
+  setPanelVisibility(cancelFormButton, true);
 
   if (mode === 'editing') {
     submitButton.textContent = 'Update RSVP';
@@ -454,10 +546,15 @@ function syncAttendanceFields() {
 }
 
 function setRowVisibility(element, isVisible) {
+  setPanelVisibility(element, isVisible);
+}
+
+function setPanelVisibility(element, isVisible) {
   if (!element) {
     return;
   }
 
+  element.classList.toggle('hidden-panel', !isVisible);
   element.hidden = !isVisible;
   element.style.display = isVisible ? '' : 'none';
 }

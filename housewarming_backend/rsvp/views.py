@@ -1,6 +1,8 @@
 import json
+from functools import wraps
 from datetime import time
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.http import JsonResponse
@@ -8,11 +10,15 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import Rsvp
+from .models import HousewarmingSettings, Rsvp
 
 
 def _json_response(payload, status=200):
     return JsonResponse(payload, status=status)
+
+
+def _forbidden_response(detail="Invalid or missing invite link."):
+    return _json_response({"code": "invalid_invite", "detail": detail}, status=403)
 
 
 def _is_duplicate_email_error(error):
@@ -53,6 +59,15 @@ def _summary_payload():
         for rsvp in rsvps.exclude(potluck_item="")
     ]
     return {"attendees": attendees, "potluckItems": potluck_items}
+
+
+def _event_details_payload(housewarming_settings):
+    return {
+        "dateLabel": housewarming_settings.date_label,
+        "timeLabel": housewarming_settings.time_label,
+        "location": housewarming_settings.location,
+        "details": housewarming_settings.details,
+    }
 
 
 def _parse_json_body(request):
@@ -101,13 +116,51 @@ def _clean_payload(payload):
     }
 
 
+def _get_housewarming_settings():
+    return HousewarmingSettings.objects.order_by("id").first()
+
+
+def _extract_invite_token(request):
+    authorization_header = request.headers.get("Authorization", "").strip()
+    if authorization_header.lower().startswith("bearer "):
+        return authorization_header[7:].strip()
+    return request.GET.get("token", "").strip()
+
+
+def _require_valid_invite(request):
+    housewarming_settings = _get_housewarming_settings()
+    if not housewarming_settings or not housewarming_settings.invite_token_hash:
+        return None, _forbidden_response("Invite access has not been configured yet.")
+
+    invite_token = _extract_invite_token(request)
+    if not housewarming_settings.has_valid_invite_token(invite_token):
+        return None, _forbidden_response()
+
+    return housewarming_settings, None
+
+
+def require_invite_token(view_func):
+    @wraps(view_func)
+    def wrapped_view(request, *args, **kwargs):
+        housewarming_settings, forbidden_response = _require_valid_invite(request)
+        if forbidden_response:
+            return forbidden_response
+
+        kwargs["housewarming_settings"] = housewarming_settings
+        return view_func(request, *args, **kwargs)
+
+    return wrapped_view
+
+
 @require_GET
-def summary(request):
+@require_invite_token
+def summary(request, **kwargs):
     return _json_response(_summary_payload())
 
 
 @require_GET
-def lookup(request):
+@require_invite_token
+def lookup(request, **kwargs):
     email = request.GET.get("email", "").strip().lower()
     if not email:
         return _json_response({"status": "not_found"}, status=404)
@@ -120,9 +173,21 @@ def lookup(request):
     return _json_response({"status": "matched", "attendee": _serialize_private_attendee(rsvp)})
 
 
+@require_GET
+@require_invite_token
+def event_details(request, housewarming_settings, **kwargs):
+    return _json_response(
+        {
+            "inviteUrlBase": settings.HOUSEWARMING_FRONTEND_URL,
+            "event": _event_details_payload(housewarming_settings),
+        }
+    )
+
+
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
-def rsvp_list(request):
+@require_invite_token
+def rsvp_list(request, **kwargs):
     if request.method == "OPTIONS":
         return _json_response({}, status=204)
 
@@ -162,7 +227,8 @@ def rsvp_list(request):
 
 @csrf_exempt
 @require_http_methods(["PUT", "OPTIONS"])
-def rsvp_detail(request, rsvp_id):
+@require_invite_token
+def rsvp_detail(request, rsvp_id, **kwargs):
     if request.method == "OPTIONS":
         return _json_response({}, status=204)
 

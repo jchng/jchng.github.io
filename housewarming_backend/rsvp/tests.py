@@ -3,10 +3,45 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Rsvp
+from .models import HousewarmingSettings, Rsvp
 
 
 class RsvpApiTests(TestCase):
+    def setUp(self):
+        self.housewarming_settings = HousewarmingSettings.objects.create(
+            date_label="Saturday, 14 June 2026",
+            time_label="11:00 am to 7:00 pm",
+            location="123 Example Street, Melbourne",
+            details="Ring the bell when you arrive.",
+        )
+        self.invite_token = self.housewarming_settings.rotate_invite_token()
+
+    def auth_headers(self, token=None):
+        return {"HTTP_AUTHORIZATION": f"Bearer {token or self.invite_token}"}
+
+    def auth_query(self, token=None, **params):
+        return {"token": token or self.invite_token, **params}
+
+    def test_event_details_requires_valid_token(self):
+        response = self.client.get(reverse("event-details"))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "invalid_invite")
+
+    def test_event_details_returns_private_metadata_with_valid_token(self):
+        response = self.client.get(reverse("event-details"), self.auth_query())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["event"],
+            {
+                "dateLabel": "Saturday, 14 June 2026",
+                "timeLabel": "11:00 am to 7:00 pm",
+                "location": "123 Example Street, Melbourne",
+                "details": "Ring the bell when you arrive.",
+            },
+        )
+
     def test_summary_returns_public_attendees_and_potluck(self):
         Rsvp.objects.create(
             name="Annie",
@@ -26,7 +61,7 @@ class RsvpApiTests(TestCase):
             potluck_item="",
         )
 
-        response = self.client.get(reverse("rsvp-summary"))
+        response = self.client.get(reverse("rsvp-summary"), self.auth_query())
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -50,7 +85,10 @@ class RsvpApiTests(TestCase):
             notes="might be late after brunch",
         )
 
-        response = self.client.get(reverse("rsvp-lookup"), {"email": "jarret@example.com"})
+        response = self.client.get(
+            reverse("rsvp-lookup"),
+            self.auth_query(email="jarret@example.com"),
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -71,10 +109,19 @@ class RsvpApiTests(TestCase):
         )
 
     def test_lookup_missing_email_returns_not_found(self):
-        response = self.client.get(reverse("rsvp-lookup"), {"email": "missing@example.com"})
+        response = self.client.get(
+            reverse("rsvp-lookup"),
+            self.auth_query(email="missing@example.com"),
+        )
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"status": "not_found"})
+
+    def test_summary_rejects_invalid_token(self):
+        response = self.client.get(reverse("rsvp-summary"), self.auth_query(token="bad-token"))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "invalid_invite")
 
     def test_create_rsvp_rejects_duplicate_email(self):
         Rsvp.objects.create(
@@ -99,6 +146,7 @@ class RsvpApiTests(TestCase):
                 }
             ),
             content_type="application/json",
+            **self.auth_headers(),
         )
 
         self.assertEqual(response.status_code, 409)
@@ -119,6 +167,7 @@ class RsvpApiTests(TestCase):
                 }
             ),
             content_type="application/json",
+            **self.auth_headers(),
         )
 
         self.assertEqual(response.status_code, 201)
@@ -152,6 +201,7 @@ class RsvpApiTests(TestCase):
                 }
             ),
             content_type="application/json",
+            **self.auth_headers(),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -163,3 +213,33 @@ class RsvpApiTests(TestCase):
         self.assertTrue(rsvp.likely_late)
         self.assertEqual(rsvp.potluck_item, "fruit salad")
         self.assertEqual(rsvp.notes, "bringing snacks")
+
+    def test_create_rsvp_requires_valid_invite_token(self):
+        response = self.client.post(
+            reverse("rsvp-list"),
+            data=json.dumps(
+                {
+                    "name": "No Invite",
+                    "email": "noinvite@example.com",
+                    "arrival_time": "12:00",
+                    "attendance_status": "going",
+                    "likely_late": False,
+                    "potluck_item": "",
+                    "notes": "",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "invalid_invite")
+
+    def test_rotating_invite_token_invalidates_previous_token(self):
+        previous_token = self.invite_token
+        new_token = self.housewarming_settings.rotate_invite_token()
+
+        old_response = self.client.get(reverse("event-details"), self.auth_query(token=previous_token))
+        new_response = self.client.get(reverse("event-details"), self.auth_query(token=new_token))
+
+        self.assertEqual(old_response.status_code, 403)
+        self.assertEqual(new_response.status_code, 200)

@@ -23,6 +23,11 @@
   margin-bottom: 1rem;
 }
 
+#eventLocation,
+#eventDetailsNote {
+  white-space: pre-line;
+}
+
 .rsvp-form {
   display: grid;
   gap: 1rem;

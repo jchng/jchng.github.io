@@ -5,6 +5,7 @@ class Rsvp(models.Model):
     class AttendanceStatus(models.TextChoices):
         GOING = "going", "Going"
         MAYBE = "maybe", "Maybe"
+        CANT_GO = "cant_go", "Can't Go"
 
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True)

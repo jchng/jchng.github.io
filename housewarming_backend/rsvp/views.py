@@ -34,8 +34,16 @@ def _serialize_private_attendee(rsvp):
 
 
 def _summary_payload():
-    attendees = [_serialize_public_attendee(rsvp) for rsvp in Rsvp.objects.all()]
-    potluck_items = [{"label": rsvp.potluck_item} for rsvp in Rsvp.objects.exclude(potluck_item="")]
+    rsvps = Rsvp.objects.exclude(
+        attendance_status=Rsvp.AttendanceStatus.CANT_GO
+    )
+
+    attendees = [_serialize_public_attendee(rsvp) for rsvp in rsvps]
+
+    potluck_items = [
+        {"label": rsvp.potluck_item}
+        for rsvp in rsvps.exclude(potluck_item="")
+    ]
     return {"attendees": attendees, "potluckItems": potluck_items}
 
 

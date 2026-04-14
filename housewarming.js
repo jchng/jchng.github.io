@@ -1,18 +1,9 @@
-const STORAGE_KEY = 'housewarming-rsvp-state-v3';
-
 const DEFAULT_STATE = {
-  attendees: [
-    { id: 'seed-annie', name: 'Annie', email: '', arrivalTime: '11:30', likelyLate: false, potluckItem: '' },
-    { id: 'seed-sam', name: 'Sam', email: '', arrivalTime: '13:00', likelyLate: true, potluckItem: '' },
-  ],
-  potluckItems: [
-    { id: 'seed-chips', label: 'chips' },
-    { id: 'seed-fruit-salad', label: 'fruit salad' },
-    { id: 'seed-sparkling-water', label: 'sparkling water' },
-  ],
+  attendees: [],
+  potluckItems: [],
 };
-
 const ALWAYS_LATE_NAMES = ['Sushen', 'Hieu', 'Sherrie'];
+const API_BASE = resolveApiBase();
 
 const chooser = document.getElementById('rsvpChooser');
 const showAddRsvpButton = document.getElementById('showAddRsvpButton');
@@ -66,10 +57,9 @@ if (
   submitButton &&
   switchToEditButton
 ) {
-  state = loadState();
-
   render();
   showChooser();
+  initializePage();
 
   showAddRsvpButton.addEventListener('click', () => {
     openAddMode();
@@ -101,33 +91,39 @@ if (
     }
 
     lookupStatus.textContent = 'Looking up your RSVP...';
-    const lookupResult = await lookupRsvpByEmail(normalizedEmail);
 
-    if (lookupResult.status === 'matched') {
-      editingAttendeeId = lookupResult.attendee.id;
-      openFormMode('editing');
-      fillFormFromAttendee(lookupResult.attendee);
-      editModeNotice.textContent = 'Edit mode: updating your existing RSVP.';
+    try {
+      const lookupResult = await lookupRsvpByEmail(normalizedEmail);
+
+      if (lookupResult.status === 'matched') {
+        editingAttendeeId = lookupResult.attendee.id;
+        openFormMode('editing');
+        fillFormFromAttendee(lookupResult.attendee);
+        editModeNotice.textContent = 'Edit mode: updating your existing RSVP.';
+        lookupStatus.textContent = '';
+        return;
+      }
+
+      editingAttendeeId = null;
+      openFormMode('add');
+      resetFormFields();
+      emailInput.value = normalizedEmail;
+      emailHint.textContent = 'No matching RSVP found. Starting a new RSVP with this email.';
+      editModeNotice.textContent = 'That email does not match an existing RSVP.';
       lookupStatus.textContent = '';
-      return;
+    } catch (error) {
+      lookupStatus.textContent = error.message || 'Could not look up your RSVP right now.';
     }
-
-    editingAttendeeId = null;
-    openFormMode('add');
-    resetFormFields();
-    emailInput.value = normalizedEmail;
-    emailHint.textContent = 'No matching RSVP found. Starting a new RSVP with this email.';
-    editModeNotice.textContent = 'That email does not match an existing RSVP.';
-    lookupStatus.textContent = '';
   });
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const formData = new FormData(form);
     const name = (formData.get('name') || '').toString().trim();
     const email = normalizeEmail((formData.get('email') || '').toString());
     const arrivalTime = (formData.get('arrival_time') || '').toString().trim();
+    const attendanceStatus = (formData.get('attendance_status') || 'going').toString();
     const likelyLate = formData.get('likely_late') === 'on';
     const potluckItem = (formData.get('potluck_item') || '').toString().trim();
 
@@ -135,81 +131,136 @@ if (
       return;
     }
 
-    if (currentMode === 'add' && email && findAttendeeByEmail(email)) {
-      editModeNotice.textContent = 'That email already exists. Do you want to edit that RSVP instead?';
-      submitButton.classList.add('hidden-panel');
-      switchToEditButton.classList.remove('hidden-panel');
-      return;
-    }
-
-    const existingAttendee = editingAttendeeId ? state.attendees.find((item) => item.id === editingAttendeeId) : null;
-    const attendeeId = existingAttendee ? existingAttendee.id : createId('attendee');
-
-    const attendeeRecord = {
-      id: attendeeId,
+    const payload = {
       name,
       email,
-      arrivalTime,
-      likelyLate,
-      potluckItem,
+      arrival_time: arrivalTime,
+      attendance_status: attendanceStatus,
+      likely_late: likelyLate,
+      potluck_item: potluckItem,
     };
 
-    if (existingAttendee) {
-      state.attendees = state.attendees.map((item) => (item.id === attendeeId ? attendeeRecord : item));
-    } else {
-      state.attendees.push(attendeeRecord);
+    submitButton.disabled = true;
+    editModeNotice.textContent = currentMode === 'editing' ? 'Saving changes...' : 'Submitting RSVP...';
+
+    try {
+      const response = currentMode === 'editing' && editingAttendeeId
+        ? await updateRsvp(editingAttendeeId, payload)
+        : await createRsvp(payload);
+
+      state = normalizeSummary(response.summary);
+      render();
+      showChooser();
+    } catch (error) {
+      if (error.code === 'duplicate_email' && currentMode === 'add' && email) {
+        editModeNotice.textContent = error.detail;
+        submitButton.classList.add('hidden-panel');
+        switchToEditButton.classList.remove('hidden-panel');
+        return;
+      }
+
+      editModeNotice.textContent = error.message || 'Could not save your RSVP right now.';
+    } finally {
+      submitButton.disabled = false;
     }
-
-    syncPotluckForAttendee(attendeeRecord);
-
-    saveState(state);
-    render();
-    showChooser();
-  });
-
-  nameInput.addEventListener('input', (event) => {
-    syncLikelyLateRule(event.target.value);
   });
 
   potluckInput.addEventListener('input', (event) => {
     updateSuggestion(event.target.value);
   });
+
+  nameInput.addEventListener('input', (event) => {
+    syncLikelyLateRule(event.target.value);
+  });
 }
 
-function loadState() {
+async function initializePage() {
+  attendeeCount.textContent = 'Loading RSVPs...';
+
   try {
-    const rawState = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawState) {
-      return cloneDefaultState();
-    }
-
-    const parsedState = JSON.parse(rawState);
-    if (!Array.isArray(parsedState.attendees) || !Array.isArray(parsedState.potluckItems)) {
-      return cloneDefaultState();
-    }
-
-    return {
-      attendees: parsedState.attendees.map((item) => ({
-        id: item.id ? item.id.toString() : createId('attendee'),
-        name: (item.name || '').toString(),
-        email: normalizeEmail((item.email || '').toString()),
-        arrivalTime: (item.arrivalTime || '').toString(),
-        likelyLate: Boolean(item.likelyLate),
-        potluckItem: (item.potluckItem || '').toString(),
-      })),
-      potluckItems: parsedState.potluckItems.map((item) => ({
-        id: item.id ? item.id.toString() : createId('potluck'),
-        label: (item.label || '').toString(),
-        attendeeId: item.attendeeId ? item.attendeeId.toString() : '',
-      })),
-    };
+    const summary = await fetchSummary();
+    state = normalizeSummary(summary);
+    render();
   } catch (error) {
-    return cloneDefaultState();
+    attendeeCount.textContent = 'Could not load RSVPs right now.';
+    attendeeList.innerHTML = '<li class="empty-state">Backend unavailable.</li>';
+    potluckList.innerHTML = '<li class="empty-state">Backend unavailable.</li>';
   }
 }
 
-function saveState(nextState) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+function resolveApiBase() {
+  const configuredBase = document.body?.dataset?.rsvpApiBase?.trim();
+  if (configuredBase) {
+    return configuredBase.replace(/\/$/, '');
+  }
+
+  if (window.location.protocol.startsWith('http') && window.location.port === '8000') {
+    return `${window.location.origin}/api`;
+  }
+
+  return 'http://127.0.0.1:8000/api';
+}
+
+async function fetchSummary() {
+  return requestJson(`${API_BASE}/rsvps/summary/`);
+}
+
+async function lookupRsvpByEmail(email) {
+  const params = new URLSearchParams({ email });
+
+  try {
+    return await requestJson(`${API_BASE}/rsvps/lookup/?${params.toString()}`);
+  } catch (error) {
+    if (error.status === 404) {
+      return { status: 'not_found' };
+    }
+
+    throw error;
+  }
+}
+
+async function createRsvp(payload) {
+  return requestJson(`${API_BASE}/rsvps/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function updateRsvp(attendeeId, payload) {
+  return requestJson(`${API_BASE}/rsvps/${attendeeId}/`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  const isJson = (response.headers.get('content-type') || '').includes('application/json');
+  const payload = isJson ? await response.json() : null;
+
+  if (!response.ok) {
+    const error = new Error(payload?.detail || 'Request failed.');
+    error.code = payload?.code;
+    error.detail = payload?.detail;
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload;
+}
+
+function normalizeSummary(summary) {
+  return {
+    attendees: Array.isArray(summary.attendees) ? summary.attendees.map((item) => ({ ...item })) : [],
+    potluckItems: Array.isArray(summary.potluckItems) ? summary.potluckItems.map((item) => ({ ...item })) : [],
+  };
 }
 
 function cloneDefaultState() {
@@ -225,7 +276,7 @@ function render() {
 }
 
 function renderAttendees() {
-  attendeeCount.textContent = state.attendees.length > 1 ? `${state.attendees.length} people so far.` : '';
+  attendeeCount.textContent = buildAttendeeSummary(state.attendees);
 
   if (!state.attendees.length) {
     attendeeList.innerHTML = '<li class="empty-state">No RSVPs yet.</li>';
@@ -234,11 +285,13 @@ function renderAttendees() {
 
   attendeeList.innerHTML = state.attendees
     .map((attendee) => {
+      const maybeBadge = attendee.attendanceStatus === 'maybe' ? '<span class="maybe-pill">Maybe</span>' : '';
       const lateBadge = attendee.likelyLate ? '<span class="late-pill">Likely late</span>' : '';
       return `
         <li>
           <div class="status-heading">
             <span class="status-name">${escapeHtml(attendee.name)}</span>
+            ${maybeBadge}
             ${lateBadge}
           </div>
           <div class="status-meta">Arriving around ${formatTime(attendee.arrivalTime)}</div>
@@ -246,6 +299,26 @@ function renderAttendees() {
       `;
     })
     .join('');
+}
+
+function buildAttendeeSummary(attendees) {
+  if (!attendees.length) {
+    return '';
+  }
+
+  const goingCount = attendees.filter((attendee) => attendee.attendanceStatus !== 'maybe').length;
+  const maybeCount = attendees.filter((attendee) => attendee.attendanceStatus === 'maybe').length;
+  const lateCount = attendees.filter((attendee) => attendee.likelyLate).length;
+
+  return [
+    formatCount(goingCount, 'going'),
+    formatCount(maybeCount, 'maybe'),
+    formatCount(lateCount, 'likely late'),
+  ].join(' • ');
+}
+
+function formatCount(count, label) {
+  return `${count} ${label}`;
 }
 
 function renderPotluckItems() {
@@ -319,6 +392,7 @@ function resetFormState() {
   forcedLateMode = false;
   resetFormFields();
   likelyLateInput.disabled = false;
+  submitButton.disabled = false;
   editModeNotice.textContent = '';
   switchToEditButton.classList.add('hidden-panel');
   submitButton.classList.remove('hidden-panel');
@@ -331,26 +405,14 @@ function fillFormFromAttendee(attendee) {
   nameInput.value = attendee.name;
   emailInput.value = attendee.email;
   arrivalTimeInput.value = attendee.arrivalTime;
+  const attendanceStatusInput = form.querySelector(`input[name="attendance_status"][value="${attendee.attendanceStatus || 'going'}"]`);
+  if (attendanceStatusInput) {
+    attendanceStatusInput.checked = true;
+  }
   potluckInput.value = attendee.potluckItem || '';
   likelyLateInput.checked = attendee.likelyLate;
   syncLikelyLateRule(attendee.name);
   updateSuggestion(potluckInput.value);
-}
-
-async function lookupRsvpByEmail(email) {
-  const existingAttendee = findAttendeeByEmail(email);
-  if (!existingAttendee) {
-    return { status: 'not_found' };
-  }
-
-  return {
-    status: 'matched',
-    attendee: { ...existingAttendee },
-  };
-}
-
-function findAttendeeByEmail(email) {
-  return state.attendees.find((item) => item.email && item.email === email);
 }
 
 function syncLikelyLateRule(rawName) {
@@ -379,18 +441,6 @@ function isLikelyLateName(rawName) {
 
   const words = normalizedName.split(' ');
   return ALWAYS_LATE_NAMES.some((name) => words.includes(normalizeText(name)));
-}
-
-function syncPotluckForAttendee(attendeeRecord) {
-  state.potluckItems = state.potluckItems.filter((item) => item.attendeeId !== attendeeRecord.id);
-
-  if (attendeeRecord.potluckItem) {
-    state.potluckItems.push({
-      id: createId('potluck'),
-      label: attendeeRecord.potluckItem,
-      attendeeId: attendeeRecord.id,
-    });
-  }
 }
 
 function updateSuggestion(rawValue) {
@@ -499,10 +549,6 @@ function formatTime(timeValue) {
   const normalizedMinutes = minutes === 0 ? '' : `:${minutesText}`;
 
   return `${normalizedHours}${normalizedMinutes} ${period}`;
-}
-
-function createId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function escapeHtml(value) {

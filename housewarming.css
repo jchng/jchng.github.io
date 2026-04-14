@@ -60,6 +60,36 @@
   font-size: 1rem;
 }
 
+.status-toggle {
+  display: inline-flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.status-option {
+  position: relative;
+}
+
+.status-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.status-option span {
+  display: inline-block;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #0FA3B1;
+  background: #fff;
+  color: #065960;
+  cursor: pointer;
+}
+
+.status-option input:checked + span {
+  background: #0FA3B1;
+  color: #fff;
+}
+
 .checkbox-row {
   display: block;
 }
@@ -159,20 +189,29 @@
 .status-heading {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .status-meta {
   color: #065960;
 }
 
+.maybe-pill,
 .late-pill {
   display: inline-block;
-  margin-left: 0.5rem;
   padding: 0 0.45rem;
-  background: #ff5050;
   color: #fff;
   font-size: 0.8rem;
   vertical-align: middle;
+}
+
+.maybe-pill {
+  background: #f0a202;
+}
+
+.late-pill {
+  background: #ff5050;
 }
 
 @media screen and (max-width: 768px) {

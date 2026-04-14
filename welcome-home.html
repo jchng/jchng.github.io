@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./housewarming.css" />
 </head>
 
-<body>
+<body data-rsvp-api-base="http://127.0.0.1:8000/api">
   <main>
     <div class="menubar">
       <div class="menu">
@@ -104,6 +104,20 @@
                 <input id="rsvpLikelyLate" name="likely_late" type="checkbox" />
                 Likely late!
               </label>
+            </div>
+
+            <div class="form-row">
+              <span>Status</span>
+              <div class="status-toggle" role="radiogroup" aria-label="RSVP status">
+                <label class="status-option">
+                  <input name="attendance_status" type="radio" value="going" checked />
+                  <span>Going</span>
+                </label>
+                <label class="status-option">
+                  <input name="attendance_status" type="radio" value="maybe" />
+                  <span>Maybe</span>
+                </label>
+              </div>
             </div>
 
             <div class="form-row">

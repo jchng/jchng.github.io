@@ -1,6 +1,6 @@
 SERVICE := housewarming_backend
 
-.PHONY: shell sh manage up down logs
+.PHONY: shell sh manage up down logs prod-up prod-down prod-logs prod-check
 
 shell:
 	docker compose exec $(SERVICE) bash
@@ -19,3 +19,15 @@ down:
 
 logs:
 	docker compose logs -f $(SERVICE)
+
+prod-up:
+	docker compose -f docker-compose.prod.yml up --build -d
+
+prod-down:
+	docker compose -f docker-compose.prod.yml down
+
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f $(SERVICE)
+
+prod-check:
+	docker compose -f docker-compose.prod.yml exec $(SERVICE) python manage.py check --deploy

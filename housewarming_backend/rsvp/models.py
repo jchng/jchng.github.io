@@ -16,6 +16,7 @@ class Rsvp(models.Model):
     )
     likely_late = models.BooleanField(default=False)
     potluck_item = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

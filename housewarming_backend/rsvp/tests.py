@@ -15,6 +15,7 @@ class RsvpApiTests(TestCase):
             attendance_status="going",
             likely_late=False,
             potluck_item="chips",
+            notes="all good",
         )
         Rsvp.objects.create(
             name="Sam",
@@ -46,6 +47,7 @@ class RsvpApiTests(TestCase):
             attendance_status="maybe",
             likely_late=True,
             potluck_item="fruit salad",
+            notes="might be late after brunch",
         )
 
         response = self.client.get(reverse("rsvp-lookup"), {"email": "jarret@example.com"})
@@ -63,6 +65,7 @@ class RsvpApiTests(TestCase):
                     "attendanceStatus": "maybe",
                     "likelyLate": True,
                     "potluckItem": "fruit salad",
+                    "notes": "might be late after brunch",
                 },
             },
         )
@@ -92,6 +95,7 @@ class RsvpApiTests(TestCase):
                     "attendance_status": "going",
                     "likely_late": False,
                     "potluck_item": "",
+                    "notes": "",
                 }
             ),
             content_type="application/json",
@@ -108,6 +112,7 @@ class RsvpApiTests(TestCase):
             attendance_status="going",
             likely_late=False,
             potluck_item="chips",
+            notes="before note",
         )
 
         response = self.client.put(
@@ -120,6 +125,7 @@ class RsvpApiTests(TestCase):
                     "attendance_status": "maybe",
                     "likely_late": True,
                     "potluck_item": "fruit salad",
+                    "notes": "bringing snacks",
                 }
             ),
             content_type="application/json",
@@ -133,3 +139,4 @@ class RsvpApiTests(TestCase):
         self.assertEqual(rsvp.attendance_status, "maybe")
         self.assertTrue(rsvp.likely_late)
         self.assertEqual(rsvp.potluck_item, "fruit salad")
+        self.assertEqual(rsvp.notes, "bringing snacks")

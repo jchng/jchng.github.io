@@ -51,13 +51,20 @@
 
 .form-row input[type="text"],
 .form-row input[type="email"],
-.form-row input[type="time"] {
+.form-row input[type="time"],
+.form-row textarea {
   width: 100%;
   padding: 0.8rem 0.9rem;
   border: 1px solid #0FA3B1;
   background: #fff;
   color: #000;
   font-size: 1rem;
+}
+
+.form-row textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
 }
 
 .status-toggle {
@@ -113,7 +120,6 @@
 }
 
 .suggestion-text {
-  min-height: 1.5rem;
   color: #065960;
 }
 

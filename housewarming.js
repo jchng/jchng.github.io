@@ -23,6 +23,7 @@ const emailHint = document.getElementById('emailHint');
 const arrivalTimeInput = document.getElementById('rsvpArrivalTime');
 const likelyLateInput = document.getElementById('rsvpLikelyLate');
 const potluckInput = document.getElementById('rsvpPotluckItem');
+const notesInput = document.getElementById('rsvpNotes');
 const suggestionText = document.getElementById('potluckSuggestion');
 const editModeNotice = document.getElementById('editModeNotice');
 const submitButton = document.getElementById('submitButton');
@@ -52,6 +53,7 @@ if (
   arrivalTimeInput &&
   likelyLateInput &&
   potluckInput &&
+  notesInput &&
   suggestionText &&
   editModeNotice &&
   submitButton &&
@@ -126,6 +128,7 @@ if (
     const attendanceStatus = (formData.get('attendance_status') || 'going').toString();
     const likelyLate = formData.get('likely_late') === 'on';
     const potluckItem = (formData.get('potluck_item') || '').toString().trim();
+    const notes = (formData.get('notes') || '').toString().trim();
 
     if (!name || !arrivalTime) {
       return;
@@ -138,6 +141,7 @@ if (
       attendance_status: attendanceStatus,
       likely_late: likelyLate,
       potluck_item: potluckItem,
+      notes,
     };
 
     submitButton.disabled = true;
@@ -410,6 +414,7 @@ function fillFormFromAttendee(attendee) {
     attendanceStatusInput.checked = true;
   }
   potluckInput.value = attendee.potluckItem || '';
+  notesInput.value = attendee.notes || '';
   likelyLateInput.checked = attendee.likelyLate;
   syncLikelyLateRule(attendee.name);
   updateSuggestion(potluckInput.value);

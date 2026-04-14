@@ -29,6 +29,7 @@ def _serialize_private_attendee(rsvp):
     payload = _serialize_public_attendee(rsvp)
     payload["email"] = rsvp.email
     payload["potluckItem"] = rsvp.potluck_item
+    payload["notes"] = rsvp.notes
     return payload
 
 
@@ -63,6 +64,7 @@ def _clean_payload(payload):
     arrival_time = str(payload.get("arrival_time", "")).strip()
     attendance_status = str(payload.get("attendance_status", Rsvp.AttendanceStatus.GOING)).strip().lower()
     potluck_item = str(payload.get("potluck_item", "")).strip()
+    notes = str(payload.get("notes", "")).strip()
     likely_late = bool(payload.get("likely_late", False))
 
     if not name:
@@ -79,6 +81,7 @@ def _clean_payload(payload):
         "attendance_status": attendance_status,
         "likely_late": likely_late,
         "potluck_item": potluck_item,
+        "notes": notes,
     }
 
 

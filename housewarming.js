@@ -114,7 +114,7 @@ if (
       editModeNotice.textContent = 'That email does not match an existing RSVP.';
       lookupStatus.textContent = '';
     } catch (error) {
-      lookupStatus.textContent = error.message || 'Could not look up your RSVP right now.';
+      lookupStatus.textContent = error.message || 'Something broke. Can\'t load your RSVP! Contact Jarret.';
     }
   });
 
@@ -186,9 +186,9 @@ async function initializePage() {
     state = normalizeSummary(summary);
     render();
   } catch (error) {
-    attendeeCount.textContent = 'Could not load RSVPs right now.';
-    attendeeList.innerHTML = '<li class="empty-state">Backend unavailable.</li>';
-    potluckList.innerHTML = '<li class="empty-state">Backend unavailable.</li>';
+    attendeeCount.textContent = 'Can\'t RSVPs, ask Jarret to fix it.';
+    attendeeList.innerHTML = '<li class="empty-state">Something broke, ask Jarret to fix it.</li>';
+    potluckList.innerHTML = '<li class="empty-state">Something broke, ask Jarret to fix it.</li>';
   }
 }
 
@@ -250,7 +250,7 @@ async function requestJson(url, options = {}) {
   const payload = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    const error = new Error(payload?.detail || 'Request failed.');
+    const error = new Error(payload?.detail || 'Uh oh. Jarret messed up. Let him know.');
     error.code = payload?.code;
     error.detail = payload?.detail;
     error.status = response.status;

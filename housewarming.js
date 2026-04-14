@@ -1,39 +1,132 @@
-const STORAGE_KEY = 'housewarming-rsvp-state-v1';
+const STORAGE_KEY = 'housewarming-rsvp-state-v3';
 
 const DEFAULT_STATE = {
   attendees: [
-    { name: 'Annie', arrivalTime: '11:30', likelyLate: false },
-    { name: 'Sam', arrivalTime: '13:00', likelyLate: true },
+    { id: 'seed-annie', name: 'Annie', email: '', arrivalTime: '11:30', likelyLate: false, potluckItem: '' },
+    { id: 'seed-sam', name: 'Sam', email: '', arrivalTime: '13:00', likelyLate: true, potluckItem: '' },
   ],
   potluckItems: [
-    { label: 'chips' },
-    { label: 'fruit salad' },
-    { label: 'sparkling water' },
+    { id: 'seed-chips', label: 'chips' },
+    { id: 'seed-fruit-salad', label: 'fruit salad' },
+    { id: 'seed-sparkling-water', label: 'sparkling water' },
   ],
 };
+
 const ALWAYS_LATE_NAMES = ['Sushen', 'Hieu', 'Sherrie'];
 
+const chooser = document.getElementById('rsvpChooser');
+const showAddRsvpButton = document.getElementById('showAddRsvpButton');
+const showEditRsvpButton = document.getElementById('showEditRsvpButton');
+const editLookupForm = document.getElementById('editLookupForm');
+const editLookupEmail = document.getElementById('editLookupEmail');
+const lookupStatus = document.getElementById('lookupStatus');
+const cancelEditButton = document.getElementById('cancelEditButton');
 const form = document.getElementById('rsvpForm');
+const cancelFormButton = document.getElementById('cancelFormButton');
+const attendeeCount = document.getElementById('attendeeCount');
 const attendeeList = document.getElementById('attendeeList');
 const potluckList = document.getElementById('potluckList');
 const nameInput = document.getElementById('rsvpName');
+const emailInput = document.getElementById('rsvpEmail');
+const emailHint = document.getElementById('emailHint');
+const arrivalTimeInput = document.getElementById('rsvpArrivalTime');
 const likelyLateInput = document.getElementById('rsvpLikelyLate');
 const potluckInput = document.getElementById('rsvpPotluckItem');
 const suggestionText = document.getElementById('potluckSuggestion');
-let state = cloneDefaultState();
+const editModeNotice = document.getElementById('editModeNotice');
+const submitButton = document.getElementById('submitButton');
+const switchToEditButton = document.getElementById('switchToEditButton');
 
-if (form && attendeeList && potluckList && nameInput && likelyLateInput && potluckInput && suggestionText) {
+let state = cloneDefaultState();
+let currentMode = 'chooser';
+let editingAttendeeId = null;
+let forcedLateMode = false;
+
+if (
+  chooser &&
+  showAddRsvpButton &&
+  showEditRsvpButton &&
+  editLookupForm &&
+  editLookupEmail &&
+  lookupStatus &&
+  cancelEditButton &&
+  form &&
+  cancelFormButton &&
+  attendeeCount &&
+  attendeeList &&
+  potluckList &&
+  nameInput &&
+  emailInput &&
+  emailHint &&
+  arrivalTimeInput &&
+  likelyLateInput &&
+  potluckInput &&
+  suggestionText &&
+  editModeNotice &&
+  submitButton &&
+  switchToEditButton
+) {
   state = loadState();
 
   render();
-  updateSuggestion('');
-  syncLikelyLateRule('');
+  showChooser();
+
+  showAddRsvpButton.addEventListener('click', () => {
+    openAddMode();
+  });
+
+  showEditRsvpButton.addEventListener('click', () => {
+    openEditLookupMode();
+  });
+
+  cancelEditButton.addEventListener('click', () => {
+    showChooser();
+  });
+
+  cancelFormButton.addEventListener('click', () => {
+    showChooser();
+  });
+
+  switchToEditButton.addEventListener('click', () => {
+    const email = emailInput.value;
+    openEditLookupMode(email);
+  });
+
+  editLookupForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const normalizedEmail = normalizeEmail(editLookupEmail.value);
+    if (!normalizedEmail) {
+      return;
+    }
+
+    lookupStatus.textContent = 'Looking up your RSVP...';
+    const lookupResult = await lookupRsvpByEmail(normalizedEmail);
+
+    if (lookupResult.status === 'matched') {
+      editingAttendeeId = lookupResult.attendee.id;
+      openFormMode('editing');
+      fillFormFromAttendee(lookupResult.attendee);
+      editModeNotice.textContent = 'Edit mode: updating your existing RSVP.';
+      lookupStatus.textContent = '';
+      return;
+    }
+
+    editingAttendeeId = null;
+    openFormMode('add');
+    resetFormFields();
+    emailInput.value = normalizedEmail;
+    emailHint.textContent = 'No matching RSVP found. Starting a new RSVP with this email.';
+    editModeNotice.textContent = 'That email does not match an existing RSVP.';
+    lookupStatus.textContent = '';
+  });
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
 
     const formData = new FormData(form);
     const name = (formData.get('name') || '').toString().trim();
+    const email = normalizeEmail((formData.get('email') || '').toString());
     const arrivalTime = (formData.get('arrival_time') || '').toString().trim();
     const likelyLate = formData.get('likely_late') === 'on';
     const potluckItem = (formData.get('potluck_item') || '').toString().trim();
@@ -42,21 +135,36 @@ if (form && attendeeList && potluckList && nameInput && likelyLateInput && potlu
       return;
     }
 
-    state.attendees.push({
+    if (currentMode === 'add' && email && findAttendeeByEmail(email)) {
+      editModeNotice.textContent = 'That email already exists. Do you want to edit that RSVP instead?';
+      submitButton.classList.add('hidden-panel');
+      switchToEditButton.classList.remove('hidden-panel');
+      return;
+    }
+
+    const existingAttendee = editingAttendeeId ? state.attendees.find((item) => item.id === editingAttendeeId) : null;
+    const attendeeId = existingAttendee ? existingAttendee.id : createId('attendee');
+
+    const attendeeRecord = {
+      id: attendeeId,
       name,
+      email,
       arrivalTime,
       likelyLate,
-    });
+      potluckItem,
+    };
 
-    if (potluckItem) {
-      state.potluckItems.push({ label: potluckItem });
+    if (existingAttendee) {
+      state.attendees = state.attendees.map((item) => (item.id === attendeeId ? attendeeRecord : item));
+    } else {
+      state.attendees.push(attendeeRecord);
     }
+
+    syncPotluckForAttendee(attendeeRecord);
 
     saveState(state);
     render();
-    form.reset();
-    syncLikelyLateRule('');
-    updateSuggestion('');
+    showChooser();
   });
 
   nameInput.addEventListener('input', (event) => {
@@ -82,12 +190,17 @@ function loadState() {
 
     return {
       attendees: parsedState.attendees.map((item) => ({
+        id: item.id ? item.id.toString() : createId('attendee'),
         name: (item.name || '').toString(),
+        email: normalizeEmail((item.email || '').toString()),
         arrivalTime: (item.arrivalTime || '').toString(),
         likelyLate: Boolean(item.likelyLate),
+        potluckItem: (item.potluckItem || '').toString(),
       })),
       potluckItems: parsedState.potluckItems.map((item) => ({
+        id: item.id ? item.id.toString() : createId('potluck'),
         label: (item.label || '').toString(),
+        attendeeId: item.attendeeId ? item.attendeeId.toString() : '',
       })),
     };
   } catch (error) {
@@ -112,6 +225,8 @@ function render() {
 }
 
 function renderAttendees() {
+  attendeeCount.textContent = state.attendees.length > 1 ? `${state.attendees.length} people so far.` : '';
+
   if (!state.attendees.length) {
     attendeeList.innerHTML = '<li class="empty-state">No RSVPs yet.</li>';
     return;
@@ -144,6 +259,140 @@ function renderPotluckItems() {
     .join('');
 }
 
+function showChooser() {
+  currentMode = 'chooser';
+  chooser.classList.remove('hidden-panel');
+  editLookupForm.classList.add('hidden-panel');
+  form.classList.add('hidden-panel');
+  cancelFormButton.classList.add('hidden-panel');
+  resetLookup();
+  resetFormState();
+}
+
+function openAddMode() {
+  editingAttendeeId = null;
+  resetFormState();
+  openFormMode('add');
+}
+
+function openEditLookupMode(prefilledEmail = '') {
+  currentMode = 'editLookup';
+  chooser.classList.add('hidden-panel');
+  form.classList.add('hidden-panel');
+  editLookupForm.classList.remove('hidden-panel');
+  cancelFormButton.classList.add('hidden-panel');
+  resetFormState();
+  resetLookup();
+  editLookupEmail.value = prefilledEmail;
+  editLookupEmail.focus();
+}
+
+function openFormMode(mode) {
+  currentMode = mode;
+  chooser.classList.add('hidden-panel');
+  editLookupForm.classList.add('hidden-panel');
+  form.classList.remove('hidden-panel');
+  cancelFormButton.classList.remove('hidden-panel');
+
+  if (mode === 'editing') {
+    submitButton.textContent = 'Update RSVP';
+    emailHint.textContent = 'Using the same email so this RSVP can be updated.';
+    return;
+  }
+
+  submitButton.textContent = 'Add RSVP';
+  emailHint.textContent = 'Optional. Use the same email later if you want to edit your RSVP.';
+}
+
+function resetLookup() {
+  editLookupForm.reset();
+  lookupStatus.textContent = '';
+}
+
+function resetFormFields() {
+  form.reset();
+  suggestionText.innerHTML = '';
+}
+
+function resetFormState() {
+  editingAttendeeId = null;
+  forcedLateMode = false;
+  resetFormFields();
+  likelyLateInput.disabled = false;
+  editModeNotice.textContent = '';
+  switchToEditButton.classList.add('hidden-panel');
+  submitButton.classList.remove('hidden-panel');
+  submitButton.textContent = 'Add RSVP';
+  emailHint.textContent = 'Optional. Use the same email later if you want to edit your RSVP.';
+  syncLikelyLateRule('');
+}
+
+function fillFormFromAttendee(attendee) {
+  nameInput.value = attendee.name;
+  emailInput.value = attendee.email;
+  arrivalTimeInput.value = attendee.arrivalTime;
+  potluckInput.value = attendee.potluckItem || '';
+  likelyLateInput.checked = attendee.likelyLate;
+  syncLikelyLateRule(attendee.name);
+  updateSuggestion(potluckInput.value);
+}
+
+async function lookupRsvpByEmail(email) {
+  const existingAttendee = findAttendeeByEmail(email);
+  if (!existingAttendee) {
+    return { status: 'not_found' };
+  }
+
+  return {
+    status: 'matched',
+    attendee: { ...existingAttendee },
+  };
+}
+
+function findAttendeeByEmail(email) {
+  return state.attendees.find((item) => item.email && item.email === email);
+}
+
+function syncLikelyLateRule(rawName) {
+  const shouldForceLate = isLikelyLateName(rawName);
+
+  if (shouldForceLate) {
+    forcedLateMode = true;
+    likelyLateInput.checked = true;
+    likelyLateInput.disabled = true;
+    return;
+  }
+
+  if (forcedLateMode) {
+    likelyLateInput.checked = false;
+  }
+
+  forcedLateMode = false;
+  likelyLateInput.disabled = false;
+}
+
+function isLikelyLateName(rawName) {
+  const normalizedName = normalizeText(rawName);
+  if (!normalizedName) {
+    return false;
+  }
+
+  const words = normalizedName.split(' ');
+  return ALWAYS_LATE_NAMES.some((name) => words.includes(normalizeText(name)));
+}
+
+function syncPotluckForAttendee(attendeeRecord) {
+  state.potluckItems = state.potluckItems.filter((item) => item.attendeeId !== attendeeRecord.id);
+
+  if (attendeeRecord.potluckItem) {
+    state.potluckItems.push({
+      id: createId('potluck'),
+      label: attendeeRecord.potluckItem,
+      attendeeId: attendeeRecord.id,
+    });
+  }
+}
+
 function updateSuggestion(rawValue) {
   const matches = findSimilarItems(rawValue, state.potluckItems);
 
@@ -160,22 +409,6 @@ function updateSuggestion(rawValue) {
     <p class="suggestion-heading">May already be on the list!</p>
     <ul class="suggestion-list">${labels}</ul>
   `;
-}
-
-function syncLikelyLateRule(rawName) {
-  const shouldForceLate = isLikelyLateName(rawName);
-  likelyLateInput.checked = shouldForceLate;
-  likelyLateInput.disabled = shouldForceLate;
-}
-
-function isLikelyLateName(rawName) {
-  const normalizedName = normalizeText(rawName);
-  if (!normalizedName) {
-    return false;
-  }
-
-  const words = normalizedName.split(' ');
-  return ALWAYS_LATE_NAMES.some((name) => words.includes(normalizeText(name)));
 }
 
 function findSimilarItems(query, potluckItems) {
@@ -224,6 +457,10 @@ function normalizeText(value) {
     .trim();
 }
 
+function normalizeEmail(value) {
+  return value.trim().toLowerCase();
+}
+
 function levenshteinDistance(left, right) {
   const matrix = Array.from({ length: left.length + 1 }, () => []);
 
@@ -262,6 +499,10 @@ function formatTime(timeValue) {
   const normalizedMinutes = minutes === 0 ? '' : `:${minutesText}`;
 
   return `${normalizedHours}${normalizedMinutes} ${period}`;
+}
+
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function escapeHtml(value) {

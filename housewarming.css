@@ -29,6 +29,17 @@
   max-width: 36rem;
 }
 
+.rsvp-chooser,
+.button-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hidden-panel {
+  display: none;
+}
+
 .form-row {
   display: grid;
   gap: 0.35rem;
@@ -39,6 +50,7 @@
 }
 
 .form-row input[type="text"],
+.form-row input[type="email"],
 .form-row input[type="time"] {
   width: 100%;
   padding: 0.8rem 0.9rem;
@@ -75,6 +87,18 @@
   color: #065960;
 }
 
+.edit-mode-notice {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #0FA3B1;
+  background: #e8f7f8;
+  color: #065960;
+}
+
+.edit-mode-notice:empty {
+  display: none;
+}
+
 .suggestion-heading {
   margin: 0 0 0.2rem;
 }
@@ -95,6 +119,20 @@
 
 .submit-button:hover {
   background: #065960;
+}
+
+.secondary-button {
+  width: fit-content;
+  padding: 0.85rem 1.4rem;
+  border: 1px solid #0FA3B1;
+  background: transparent;
+  color: #065960;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #D9E5D6;
 }
 
 .status-list {

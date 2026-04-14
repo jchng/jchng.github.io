@@ -60,10 +60,37 @@
       </h1>
       <div class="rsvp-layout">
         <div class="rsvp-panel">
-          <form id="rsvpForm" class="rsvp-form">
+          <div id="rsvpChooser" class="rsvp-chooser">
+            <button id="showAddRsvpButton" type="button" class="submit-button">RSVP</button>
+            <button id="showEditRsvpButton" type="button" class="secondary-button">Edit RSVP</button>
+          </div>
+
+          <form id="editLookupForm" class="rsvp-form hidden-panel">
+            <div class="form-row">
+              <label for="editLookupEmail">Email</label>
+              <input id="editLookupEmail" name="lookup_email" type="email" autocomplete="email" required />
+              <p class="input-hint">Use the same email from your original RSVP.</p>
+            </div>
+
+            <p id="lookupStatus" class="edit-mode-notice" aria-live="polite"></p>
+            <div class="button-row">
+              <button type="submit" class="submit-button">Find RSVP</button>
+              <button id="cancelEditButton" type="button" class="secondary-button">Cancel</button>
+            </div>
+          </form>
+
+          <form id="rsvpForm" class="rsvp-form hidden-panel">
+            <p id="editModeNotice" class="edit-mode-notice" aria-live="polite"></p>
+
             <div class="form-row">
               <label for="rsvpName">Name</label>
               <input id="rsvpName" name="name" type="text" required autocomplete="name" />
+            </div>
+
+            <div class="form-row">
+              <label for="rsvpEmail">Email</label>
+              <input id="rsvpEmail" name="email" type="email" autocomplete="email" />
+              <p id="emailHint" class="input-hint">Optional. Use the same email later if you want to edit your RSVP.</p>
             </div>
 
             <div class="form-row">
@@ -85,12 +112,17 @@
               <div id="potluckSuggestion" class="suggestion-text" aria-live="polite"></div>
             </div>
 
-            <button type="submit" class="submit-button">Add RSVP</button>
+            <div class="button-row">
+              <button id="submitButton" type="submit" class="submit-button">Add RSVP</button>
+              <button id="switchToEditButton" type="button" class="secondary-button hidden-panel">Edit instead</button>
+              <button id="cancelFormButton" type="button" class="secondary-button hidden-panel">Cancel</button>
+            </div>
           </form>
         </div>
 
         <div class="rsvp-panel">
           <h2>People coming</h2>
+          <p id="attendeeCount" class="panel-intro"></p>
           <ul id="attendeeList" class="status-list"></ul>
         </div>
 

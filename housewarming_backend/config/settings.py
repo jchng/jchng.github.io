@@ -134,5 +134,5 @@ SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
 
 HOUSEWARMING_FRONTEND_URL = os.environ.get(
     "HOUSEWARMING_FRONTEND_URL",
-    "http://jchng.com/welcome-home.html",
+    "http://jchng.com/welcome-home/",
 )

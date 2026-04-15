@@ -2,23 +2,23 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-def forward_copy_housewarming_to_event(apps, schema_editor):
+def forward_copy_legacy_settings_to_event(apps, schema_editor):
     Event = apps.get_model("rsvp", "Event")
     HousewarmingSettings = apps.get_model("rsvp", "HousewarmingSettings")
     Rsvp = apps.get_model("rsvp", "Rsvp")
 
-    housewarming_settings = HousewarmingSettings.objects.order_by("id").first()
-    if housewarming_settings:
+    legacy_settings = HousewarmingSettings.objects.order_by("id").first()
+    if legacy_settings:
         event = Event.objects.create(
             title="Housewarming",
             slug="housewarming",
-            date_label=housewarming_settings.date_label,
-            time_label=housewarming_settings.time_label,
-            location=housewarming_settings.location,
-            details=housewarming_settings.details,
-            invite_token_hash=housewarming_settings.invite_token_hash,
-            created_at=housewarming_settings.created_at,
-            updated_at=housewarming_settings.updated_at,
+            date_label=legacy_settings.date_label,
+            time_label=legacy_settings.time_label,
+            location=legacy_settings.location,
+            details=legacy_settings.details,
+            invite_token_hash=legacy_settings.invite_token_hash,
+            created_at=legacy_settings.created_at,
+            updated_at=legacy_settings.updated_at,
         )
     else:
         event = Event.objects.create(title="Housewarming", slug="housewarming")
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
             name="event",
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="rsvps", to="rsvp.event"),
         ),
-        migrations.RunPython(forward_copy_housewarming_to_event, migrations.RunPython.noop),
+        migrations.RunPython(forward_copy_legacy_settings_to_event, migrations.RunPython.noop),
         migrations.AlterField(
             model_name="rsvp",
             name="event",

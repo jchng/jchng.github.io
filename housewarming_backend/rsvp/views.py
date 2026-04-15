@@ -196,7 +196,7 @@ def lookup(request, event, **kwargs):
 def event_details(request, event, **kwargs):
     return _json_response(
         {
-            "inviteUrlBase": settings.HOUSEWARMING_FRONTEND_URL,
+            "inviteUrlBase": settings.EVENT_FRONTEND_URL,
             "event": _event_details_payload(event),
         }
     )

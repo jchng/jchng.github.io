@@ -46,7 +46,7 @@ class EventAdmin(admin.ModelAdmin):
 
         return format_html(
             "The raw invite URL is only shown once when you generate it. Base page: <code>{}</code>",
-            settings.HOUSEWARMING_FRONTEND_URL,
+            settings.EVENT_FRONTEND_URL,
         )
 
     invite_link_help.short_description = "Invite link status"
@@ -70,7 +70,7 @@ class EventAdmin(admin.ModelAdmin):
         return super().response_change(request, obj)
 
     def build_invite_url(self, raw_token):
-        frontend_url = settings.HOUSEWARMING_FRONTEND_URL
+        frontend_url = settings.EVENT_FRONTEND_URL
         parts = urlsplit(frontend_url)
         query_pairs = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True) if key != "t"]
         return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query_pairs), raw_token))

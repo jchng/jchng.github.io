@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *.sqlite3
 *.db
-housewarming_backend/.env
-housewarming_backend/.env.*
-!housewarming_backend/.env.example
-!housewarming_backend/.env.hosting.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.hosting.example

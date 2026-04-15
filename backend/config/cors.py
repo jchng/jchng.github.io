@@ -16,7 +16,7 @@ class LocalCorsMiddleware:
         if self._is_allowed_origin(origin):
             response["Access-Control-Allow-Origin"] = origin
             response["Vary"] = "Origin"
-            response["Access-Control-Allow-Headers"] = "Content-Type"
+            response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Event-Slug"
             response["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
 
         return response

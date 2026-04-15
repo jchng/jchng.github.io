@@ -23,6 +23,10 @@
   margin-bottom: 1rem;
 }
 
+.event-intro {
+  width: 75%;
+}
+
 #eventLocation,
 #eventDetailsNote {
   white-space: pre-line;
@@ -227,6 +231,10 @@
 }
 
 @media screen and (max-width: 768px) {
+  .event-intro {
+    width: 100%;
+  }
+
   .rsvp-layout {
     grid-template-columns: 1fr;
   }

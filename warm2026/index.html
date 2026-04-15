@@ -30,10 +30,11 @@
       </div>
     </div>
     <section class="housewarming-page">
-      <h1>Housewarming 🎉</h1>
-      <p>Welcome! This page is for the people who have the link.</p>
-      <p>This is where I'll be posting updates.</p>
-      <p>Hooray for no facebook events!</p>
+      <h1>Kinross St Housewarming</h1>
+      <div class="event-intro">
+        <p>Bit overdue, committing to this one.</p>
+        <p>This is where you'll find updates - hooray for no Facebook events!</p>
+      </div>
 
       <h1>
         Details
@@ -42,7 +43,7 @@
       <ul id="privateEventDetails" class="hidden-panel">
         <li>Date: <span id="eventDateLabel"></span></li>
         <li>Time: <span id="eventTimeLabel"></span></li>
-        <li>Location: <span id="eventLocation"></span></li>
+        <li>Location: <a id="eventLocation" href="" target="_blank" rel="noreferrer"></a></li>
       </ul>
       <p id="eventDetailsNote" class="panel-intro hidden-panel"></p>
 
@@ -50,8 +51,10 @@
         Things to know
       </h1>
       <ul>
-        <li>Bring yourself</li>
+        <li>Bring yourself. Reach out to me about plus ones.</li>
+        <li>There will be baked potatoes, you can bring over toppings</li>
         <li>Snacks and drinks are welcome but not required</li>
+        <li>I have one bucket for various activities</li>
         <li>Please RSVP so I know roughly how many people are coming</li>
       </ul>
 
@@ -135,7 +138,7 @@
             <div id="potluckRow" class="form-row">
               <label for="rsvpPotluckItem">Potluck - What might you bring?</label>
               <input id="rsvpPotluckItem" name="potluck_item" type="text" autocomplete="off" />
-              <p class="input-hint">Optional. No pressure.</p>
+              <p class="input-hint">Optional - no pressure. Quantity of item will be useful.</p>
               <div id="potluckSuggestion" class="suggestion-text" aria-live="polite"></div>
             </div>
 

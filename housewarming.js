@@ -148,7 +148,7 @@ if (
       editModeNotice.textContent = 'That email does not match an existing RSVP.';
       lookupStatus.textContent = '';
     } catch (error) {
-      lookupStatus.textContent = error.message || 'Something broke. Can\'t load your RSVP! Contact Jarret.';
+      lookupStatus.textContent = error.message || 'Something broke. Can\'t load your RSVP! Contact me.';
     }
   });
 
@@ -190,9 +190,9 @@ if (
       state = normalizeSummary(response.summary);
       render();
       if (wasAdding) {
-        showConfirmation();
+        showConfirmation(buildAddConfirmationMessage(attendanceStatus));
       } else {
-        showChooser();
+        showConfirmation('Got it. Thanks for letting me know.');
       }
     } catch (error) {
       if (error.code === 'duplicate_email' && currentMode === 'add' && email) {
@@ -246,7 +246,7 @@ async function initializePage() {
       return;
     }
 
-    lockPrivateSections('Private details are temporarily unavailable. Ask Jarret to check the server.');
+    lockPrivateSections('Private details are temporarily unavailable. Ask me to check the server.');
   }
 }
 
@@ -335,7 +335,7 @@ async function requestJson(url, options = {}) {
   const payload = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    const error = new Error(payload?.detail || 'Uh oh. Jarret messed up. Let him know.');
+    const error = new Error(payload?.detail || 'Uh oh. I messed up. Let him know.');
     error.code = payload?.code;
     error.detail = payload?.detail;
     error.status = response.status;
@@ -369,6 +369,9 @@ function renderEventDetails(event) {
   eventDateLabel.textContent = event?.dateLabel || '';
   eventTimeLabel.textContent = event?.timeLabel || '';
   eventLocation.textContent = event?.location || '';
+  eventLocation.href = event?.location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`
+    : '';
   eventDetailsNote.textContent = event?.details || '';
   eventDetailsNote.classList.toggle('hidden-panel', !eventDetailsNote.textContent);
 }
@@ -445,16 +448,30 @@ function showChooser() {
   resetFormState();
 }
 
-function showConfirmation() {
+function showConfirmation(message) {
   currentMode = 'confirmation';
   setPanelVisibility(chooser, false);
   setPanelVisibility(confirmationPanel, true);
   setPanelVisibility(editLookupForm, false);
   setPanelVisibility(form, false);
   setPanelVisibility(cancelFormButton, false);
-  confirmationMessage.textContent = `Thanks for letting me know, see you on the ${currentEvent?.dateLabel || 'the day'}!`;
+  confirmationMessage.textContent = message;
   resetLookup();
   resetFormState();
+}
+
+function buildAddConfirmationMessage(attendanceStatus) {
+  const dateLabel = currentEvent?.dateLabel || 'the day';
+
+  if (attendanceStatus === 'maybe') {
+    return `Thanks for letting me know, maybe see you on the ${dateLabel}!`;
+  }
+
+  if (attendanceStatus === 'cant_go') {
+    return "That's a shame! Thanks for letting me know, but I'm sure we'll catch up at some point.";
+  }
+
+  return `Thanks for letting me know, see you on the ${dateLabel}!`;
 }
 
 function lockPrivateSections(message) {
@@ -477,6 +494,7 @@ function lockPrivateSections(message) {
   eventDateLabel.textContent = '';
   eventTimeLabel.textContent = '';
   eventLocation.textContent = '';
+  eventLocation.removeAttribute('href');
   eventDetailsNote.textContent = '';
   eventDetailsNote.classList.add('hidden-panel');
 }

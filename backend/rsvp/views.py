@@ -17,7 +17,7 @@ def _json_response(payload, status=200):
     return JsonResponse(payload, status=status)
 
 
-def _forbidden_response(detail="Invalid or missing invite link."):
+def _forbidden_response(detail="Invalid or missing invite link. Reach out to Jarret."):
     return _json_response({"code": "invalid_invite", "detail": detail}, status=403)
 
 

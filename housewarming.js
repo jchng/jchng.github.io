@@ -16,6 +16,9 @@ const eventDetailsNote = document.getElementById('eventDetailsNote');
 const rsvpAccessNotice = document.getElementById('rsvpAccessNotice');
 const rsvpLayout = document.getElementById('rsvpLayout');
 const chooser = document.getElementById('rsvpChooser');
+const confirmationPanel = document.getElementById('rsvpConfirmation');
+const confirmationMessage = document.getElementById('rsvpConfirmationMessage');
+const dismissConfirmationButton = document.getElementById('dismissConfirmationButton');
 const showAddRsvpButton = document.getElementById('showAddRsvpButton');
 const showEditRsvpButton = document.getElementById('showEditRsvpButton');
 const editLookupForm = document.getElementById('editLookupForm');
@@ -48,6 +51,7 @@ let currentMode = 'chooser';
 let editingAttendeeId = null;
 let forcedLateMode = false;
 let hasInviteAccess = false;
+let currentEvent = null;
 
 if (
   privateAccessNotice &&
@@ -59,6 +63,9 @@ if (
   rsvpAccessNotice &&
   rsvpLayout &&
   chooser &&
+  confirmationPanel &&
+  confirmationMessage &&
+  dismissConfirmationButton &&
   showAddRsvpButton &&
   showEditRsvpButton &&
   editLookupForm &&
@@ -92,6 +99,10 @@ if (
 
   showEditRsvpButton.addEventListener('click', () => {
     openEditLookupMode();
+  });
+
+  dismissConfirmationButton.addEventListener('click', () => {
+    showChooser();
   });
 
   cancelEditButton.addEventListener('click', () => {
@@ -171,13 +182,18 @@ if (
     editModeNotice.textContent = currentMode === 'editing' ? 'Saving changes...' : 'Submitting RSVP...';
 
     try {
+      const wasAdding = currentMode === 'add';
       const response = currentMode === 'editing' && editingAttendeeId
         ? await updateRsvp(editingAttendeeId, payload)
         : await createRsvp(payload);
 
       state = normalizeSummary(response.summary);
       render();
-      showChooser();
+      if (wasAdding) {
+        showConfirmation();
+      } else {
+        showChooser();
+      }
     } catch (error) {
       if (error.code === 'duplicate_email' && currentMode === 'add' && email) {
         editModeNotice.textContent = error.detail;
@@ -218,6 +234,7 @@ async function initializePage() {
     ]);
 
     hasInviteAccess = true;
+    currentEvent = eventDetailsPayload.event || null;
     renderEventDetails(eventDetailsPayload.event);
     state = normalizeSummary(summary);
     render();
@@ -348,6 +365,7 @@ function render() {
 }
 
 function renderEventDetails(event) {
+  currentEvent = event || null;
   eventDateLabel.textContent = event?.dateLabel || '';
   eventTimeLabel.textContent = event?.timeLabel || '';
   eventLocation.textContent = event?.location || '';
@@ -419,6 +437,7 @@ function showChooser() {
 
   currentMode = 'chooser';
   setPanelVisibility(chooser, true);
+  setPanelVisibility(confirmationPanel, false);
   setPanelVisibility(editLookupForm, false);
   setPanelVisibility(form, false);
   setPanelVisibility(cancelFormButton, false);
@@ -426,11 +445,25 @@ function showChooser() {
   resetFormState();
 }
 
+function showConfirmation() {
+  currentMode = 'confirmation';
+  setPanelVisibility(chooser, false);
+  setPanelVisibility(confirmationPanel, true);
+  setPanelVisibility(editLookupForm, false);
+  setPanelVisibility(form, false);
+  setPanelVisibility(cancelFormButton, false);
+  confirmationMessage.textContent = `Thanks for letting me know, see you on the ${currentEvent?.dateLabel || 'the day'}!`;
+  resetLookup();
+  resetFormState();
+}
+
 function lockPrivateSections(message) {
   hasInviteAccess = false;
+  currentEvent = null;
   setPanelVisibility(privateEventDetails, false);
   setPanelVisibility(rsvpLayout, false);
   setPanelVisibility(chooser, false);
+  setPanelVisibility(confirmationPanel, false);
   setPanelVisibility(editLookupForm, false);
   setPanelVisibility(form, false);
   setPanelVisibility(cancelFormButton, false);

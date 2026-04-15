@@ -3,30 +3,41 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import HousewarmingSettings, Rsvp
+from .models import Event, Rsvp
 
 
 class RsvpApiTests(TestCase):
     def setUp(self):
-        self.housewarming_settings = HousewarmingSettings.objects.create(
-            date_label="Saturday, 14 June 2026",
-            time_label="11:00 am to 7:00 pm",
-            location="123 Example Street, Melbourne",
-            details="Ring the bell when you arrive.",
-        )
-        self.invite_token = self.housewarming_settings.rotate_invite_token()
+        self.event = Event.objects.get(slug="housewarming")
+        self.event.title = "Housewarming"
+        self.event.date_label = "Saturday, 14 June 2026"
+        self.event.time_label = "11:00 am to 7:00 pm"
+        self.event.location = "123 Example Street, Melbourne"
+        self.event.details = "Ring the bell when you arrive."
+        self.event.public_blurb = ""
+        self.event.save()
+        self.invite_token = self.event.rotate_invite_token()
 
     def auth_headers(self, token=None):
-        return {"HTTP_AUTHORIZATION": f"Bearer {token or self.invite_token}"}
+        return {
+            "HTTP_AUTHORIZATION": f"Bearer {token or self.invite_token}",
+            "HTTP_X_EVENT_SLUG": self.event.slug,
+        }
 
     def auth_query(self, token=None, **params):
-        return {"token": token or self.invite_token, **params}
+        return {"token": token or self.invite_token, "event": self.event.slug, **params}
 
     def test_event_details_requires_valid_token(self):
-        response = self.client.get(reverse("event-details"))
+        response = self.client.get(reverse("event-details"), {"event": self.event.slug})
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "invalid_invite")
+
+    def test_event_details_requires_event_slug(self):
+        response = self.client.get(reverse("event-details"), {}, **{"HTTP_AUTHORIZATION": f"Bearer {self.invite_token}"})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "missing_event")
 
     def test_event_details_returns_private_metadata_with_valid_token(self):
         response = self.client.get(reverse("event-details"), self.auth_query())
@@ -35,6 +46,8 @@ class RsvpApiTests(TestCase):
         self.assertEqual(
             response.json()["event"],
             {
+                "title": "Housewarming",
+                "publicBlurb": "",
                 "dateLabel": "Saturday, 14 June 2026",
                 "timeLabel": "11:00 am to 7:00 pm",
                 "location": "123 Example Street, Melbourne",
@@ -44,6 +57,7 @@ class RsvpApiTests(TestCase):
 
     def test_summary_returns_public_attendees_and_potluck(self):
         Rsvp.objects.create(
+            event=self.event,
             name="Annie",
             email="annie@example.com",
             arrival_time="11:30",
@@ -53,6 +67,7 @@ class RsvpApiTests(TestCase):
             notes="all good",
         )
         Rsvp.objects.create(
+            event=self.event,
             name="Sam",
             email="sam@example.com",
             arrival_time="13:00",
@@ -76,6 +91,7 @@ class RsvpApiTests(TestCase):
 
     def test_lookup_by_email_returns_edit_payload(self):
         rsvp = Rsvp.objects.create(
+            event=self.event,
             name="Jarret",
             email="jarret@example.com",
             arrival_time="12:15",
@@ -123,8 +139,9 @@ class RsvpApiTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "invalid_invite")
 
-    def test_create_rsvp_rejects_duplicate_email(self):
+    def test_create_rsvp_rejects_duplicate_email_for_same_event(self):
         Rsvp.objects.create(
+            event=self.event,
             name="Existing",
             email="existing@example.com",
             arrival_time="11:00",
@@ -152,6 +169,36 @@ class RsvpApiTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["code"], "duplicate_email")
 
+    def test_create_rsvp_allows_duplicate_email_for_other_event(self):
+        other_event = Event.objects.create(title="Dinner", slug="dinner")
+        Rsvp.objects.create(
+            event=other_event,
+            name="Existing",
+            email="shared@example.com",
+            arrival_time="11:00",
+            attendance_status="going",
+            likely_late=False,
+        )
+
+        response = self.client.post(
+            reverse("rsvp-list"),
+            data=json.dumps(
+                {
+                    "name": "New Person",
+                    "email": "shared@example.com",
+                    "arrival_time": "12:00",
+                    "attendance_status": "going",
+                    "likely_late": False,
+                    "potluck_item": "",
+                    "notes": "",
+                }
+            ),
+            content_type="application/json",
+            **self.auth_headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+
     def test_create_cant_go_rsvp_allows_blank_arrival_time(self):
         response = self.client.post(
             reverse("rsvp-list"),
@@ -171,13 +218,14 @@ class RsvpApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        rsvp = Rsvp.objects.get(email="cantgo@example.com")
+        rsvp = Rsvp.objects.get(event=self.event, email="cantgo@example.com")
         self.assertIsNone(rsvp.arrival_time)
         self.assertEqual(rsvp.attendance_status, "cant_go")
         self.assertFalse(rsvp.likely_late)
 
     def test_update_rsvp_allows_email_change(self):
         rsvp = Rsvp.objects.create(
+            event=self.event,
             name="Before",
             email="before@example.com",
             arrival_time="11:00",
@@ -231,12 +279,12 @@ class RsvpApiTests(TestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["code"], "invalid_invite")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], "missing_event")
 
     def test_rotating_invite_token_invalidates_previous_token(self):
         previous_token = self.invite_token
-        new_token = self.housewarming_settings.rotate_invite_token()
+        new_token = self.event.rotate_invite_token()
 
         old_response = self.client.get(reverse("event-details"), self.auth_query(token=previous_token))
         new_response = self.client.get(reverse("event-details"), self.auth_query(token=new_token))

@@ -4,6 +4,7 @@ const DEFAULT_STATE = {
 };
 const ALWAYS_LATE_NAMES = ['Sushen', 'Hieu', 'Sherrie'];
 const API_BASE = resolveApiBase();
+const EVENT_SLUG = resolveEventSlug();
 const INVITE_TOKEN = resolveInviteToken();
 
 const privateAccessNotice = document.getElementById('privateAccessNotice');
@@ -245,6 +246,10 @@ function resolveApiBase() {
   return 'http://127.0.0.1:8000/api';
 }
 
+function resolveEventSlug() {
+  return document.body?.dataset?.eventSlug?.trim() || '';
+}
+
 function resolveInviteToken() {
   const hashToken = window.location.hash.replace(/^#/, '').trim();
   if (hashToken) {
@@ -295,6 +300,10 @@ async function requestJson(url, options = {}) {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
+
+  if (EVENT_SLUG) {
+    headers['X-Event-Slug'] = EVENT_SLUG;
+  }
 
   if (INVITE_TOKEN) {
     headers.Authorization = `Bearer ${INVITE_TOKEN}`;

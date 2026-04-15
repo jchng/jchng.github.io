@@ -6,24 +6,26 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import HousewarmingSettings, Rsvp
+from .models import Event, Rsvp
 
 
 @admin.register(Rsvp)
 class RsvpAdmin(admin.ModelAdmin):
-    list_display = ("name", "attendance_status", "email", "arrival_time", "likely_late", "potluck_item", "updated_at", "notes")
-    search_fields = ("name", "email", "potluck_item", "notes")
-    list_filter = ("attendance_status", "likely_late")
+    list_display = ("name", "event", "attendance_status", "email", "arrival_time", "likely_late", "potluck_item", "updated_at", "notes")
+    search_fields = ("name", "email", "potluck_item", "notes", "event__title", "event__slug")
+    list_filter = ("event", "attendance_status", "likely_late")
 
 
-@admin.register(HousewarmingSettings)
-class HousewarmingSettingsAdmin(admin.ModelAdmin):
-    change_form_template = "admin/rsvp/housewarmingsettings/change_form.html"
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    change_form_template = "admin/rsvp/event/change_form.html"
+    list_display = ("title", "slug", "updated_at", "created_at")
+    search_fields = ("title", "slug", "location", "details")
     fieldsets = (
         (
-            "Private event details",
+            "Event",
             {
-                "fields": ("date_label", "time_label", "location", "details"),
+                "fields": ("title", "slug", "public_blurb", "date_label", "time_label", "location", "details"),
             },
         ),
         (
@@ -34,11 +36,6 @@ class HousewarmingSettingsAdmin(admin.ModelAdmin):
         ),
     )
     readonly_fields = ("invite_link_help", "created_at", "updated_at")
-
-    def has_add_permission(self, request):
-        if HousewarmingSettings.objects.exists():
-            return False
-        return super().has_add_permission(request)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -67,7 +64,7 @@ class HousewarmingSettingsAdmin(admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
             return HttpResponseRedirect(
-                reverse("admin:rsvp_housewarmingsettings_change", args=[obj.pk])
+                reverse("admin:rsvp_event_change", args=[obj.pk])
             )
 
         return super().response_change(request, obj)

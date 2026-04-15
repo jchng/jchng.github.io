@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import HousewarmingSettings, Rsvp
+from .models import Event, Rsvp
 
 
 def _json_response(payload, status=200):
@@ -24,8 +24,10 @@ def _forbidden_response(detail="Invalid or missing invite link."):
 def _is_duplicate_email_error(error):
     message = str(error).lower()
     return (
-        "unique_non_blank_rsvp_email" in message
+        "unique_non_blank_event_rsvp_email" in message
+        or "unique_non_blank_rsvp_email" in message
         or "unique constraint failed: rsvp_rsvp.email" in message
+        or "unique constraint failed: rsvp_rsvp.event_id, rsvp_rsvp.email" in message
     )
 
 
@@ -47,8 +49,8 @@ def _serialize_private_attendee(rsvp):
     return payload
 
 
-def _summary_payload():
-    rsvps = Rsvp.objects.exclude(
+def _summary_payload(event):
+    rsvps = event.rsvps.exclude(
         attendance_status=Rsvp.AttendanceStatus.CANT_GO
     )
 
@@ -61,12 +63,14 @@ def _summary_payload():
     return {"attendees": attendees, "potluckItems": potluck_items}
 
 
-def _event_details_payload(housewarming_settings):
+def _event_details_payload(event):
     return {
-        "dateLabel": housewarming_settings.date_label,
-        "timeLabel": housewarming_settings.time_label,
-        "location": housewarming_settings.location,
-        "details": housewarming_settings.details,
+        "title": event.title,
+        "publicBlurb": event.public_blurb,
+        "dateLabel": event.date_label,
+        "timeLabel": event.time_label,
+        "location": event.location,
+        "details": event.details,
     }
 
 
@@ -116,8 +120,18 @@ def _clean_payload(payload):
     }
 
 
-def _get_housewarming_settings():
-    return HousewarmingSettings.objects.order_by("id").first()
+def _extract_event_slug(request):
+    return (
+        request.headers.get("X-Event-Slug", "").strip()
+        or request.GET.get("event", "").strip()
+    )
+
+
+def _get_current_event(request):
+    event_slug = _extract_event_slug(request)
+    if not event_slug:
+        return None
+    return Event.objects.filter(slug=event_slug).first()
 
 
 def _extract_invite_token(request):
@@ -128,25 +142,29 @@ def _extract_invite_token(request):
 
 
 def _require_valid_invite(request):
-    housewarming_settings = _get_housewarming_settings()
-    if not housewarming_settings or not housewarming_settings.invite_token_hash:
+    event_slug = _extract_event_slug(request)
+    if not event_slug:
+        return None, _json_response({"code": "missing_event", "detail": "Missing event slug."}, status=400)
+
+    event = _get_current_event(request)
+    if not event or not event.invite_token_hash:
         return None, _forbidden_response("Invite access has not been configured yet.")
 
     invite_token = _extract_invite_token(request)
-    if not housewarming_settings.has_valid_invite_token(invite_token):
+    if not event.has_valid_invite_token(invite_token):
         return None, _forbidden_response()
 
-    return housewarming_settings, None
+    return event, None
 
 
 def require_invite_token(view_func):
     @wraps(view_func)
     def wrapped_view(request, *args, **kwargs):
-        housewarming_settings, forbidden_response = _require_valid_invite(request)
+        event, forbidden_response = _require_valid_invite(request)
         if forbidden_response:
             return forbidden_response
 
-        kwargs["housewarming_settings"] = housewarming_settings
+        kwargs["event"] = event
         return view_func(request, *args, **kwargs)
 
     return wrapped_view
@@ -154,19 +172,19 @@ def require_invite_token(view_func):
 
 @require_GET
 @require_invite_token
-def summary(request, **kwargs):
-    return _json_response(_summary_payload())
+def summary(request, event, **kwargs):
+    return _json_response(_summary_payload(event))
 
 
 @require_GET
 @require_invite_token
-def lookup(request, **kwargs):
+def lookup(request, event, **kwargs):
     email = request.GET.get("email", "").strip().lower()
     if not email:
         return _json_response({"status": "not_found"}, status=404)
 
     try:
-        rsvp = Rsvp.objects.get(email=email)
+        rsvp = event.rsvps.get(email=email)
     except Rsvp.DoesNotExist:
         return _json_response({"status": "not_found"}, status=404)
 
@@ -175,11 +193,11 @@ def lookup(request, **kwargs):
 
 @require_GET
 @require_invite_token
-def event_details(request, housewarming_settings, **kwargs):
+def event_details(request, event, **kwargs):
     return _json_response(
         {
             "inviteUrlBase": settings.HOUSEWARMING_FRONTEND_URL,
-            "event": _event_details_payload(housewarming_settings),
+            "event": _event_details_payload(event),
         }
     )
 
@@ -187,7 +205,7 @@ def event_details(request, housewarming_settings, **kwargs):
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 @require_invite_token
-def rsvp_list(request, **kwargs):
+def rsvp_list(request, event, **kwargs):
     if request.method == "OPTIONS":
         return _json_response({}, status=204)
 
@@ -197,7 +215,7 @@ def rsvp_list(request, **kwargs):
         return _json_response({"code": "invalid_payload", "detail": exc.message}, status=400)
 
     try:
-        rsvp = Rsvp.objects.create(**payload)
+        rsvp = Rsvp.objects.create(event=event, **payload)
     except IntegrityError as error:
         if _is_duplicate_email_error(error):
             return _json_response(
@@ -219,7 +237,7 @@ def rsvp_list(request, **kwargs):
         {
             "status": "created",
             "attendee": _serialize_private_attendee(rsvp),
-            "summary": _summary_payload(),
+            "summary": _summary_payload(event),
         },
         status=201,
     )
@@ -228,11 +246,11 @@ def rsvp_list(request, **kwargs):
 @csrf_exempt
 @require_http_methods(["PUT", "OPTIONS"])
 @require_invite_token
-def rsvp_detail(request, rsvp_id, **kwargs):
+def rsvp_detail(request, rsvp_id, event, **kwargs):
     if request.method == "OPTIONS":
         return _json_response({}, status=204)
 
-    rsvp = get_object_or_404(Rsvp, pk=rsvp_id)
+    rsvp = get_object_or_404(event.rsvps, pk=rsvp_id)
 
     try:
         payload = _clean_payload(_parse_json_body(request))
@@ -265,6 +283,6 @@ def rsvp_detail(request, rsvp_id, **kwargs):
         {
             "status": "updated",
             "attendee": _serialize_private_attendee(rsvp),
-            "summary": _summary_payload(),
+            "summary": _summary_payload(event),
         }
     )

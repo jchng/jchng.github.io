@@ -13,6 +13,7 @@ const eventDateLabel = document.getElementById('eventDateLabel');
 const eventTimeLabel = document.getElementById('eventTimeLabel');
 const eventLocation = document.getElementById('eventLocation');
 const eventDetailsNote = document.getElementById('eventDetailsNote');
+const rsvpHeading = document.getElementById('rsvpHeading');
 const rsvpAccessNotice = document.getElementById('rsvpAccessNotice');
 const rsvpLayout = document.getElementById('rsvpLayout');
 const chooser = document.getElementById('rsvpChooser');
@@ -60,6 +61,7 @@ if (
   eventTimeLabel &&
   eventLocation &&
   eventDetailsNote &&
+  rsvpHeading &&
   rsvpAccessNotice &&
   rsvpLayout &&
   chooser &&
@@ -458,6 +460,7 @@ function showConfirmation(message) {
   confirmationMessage.textContent = message;
   resetLookup();
   resetFormState();
+  scrollToRsvpHeading();
 }
 
 function buildAddConfirmationMessage(attendanceStatus) {
@@ -497,6 +500,10 @@ function lockPrivateSections(message) {
   eventLocation.removeAttribute('href');
   eventDetailsNote.textContent = '';
   eventDetailsNote.classList.add('hidden-panel');
+}
+
+function scrollToRsvpHeading() {
+  rsvpHeading.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function unlockPrivateSections() {

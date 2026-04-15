@@ -1,4 +1,4 @@
-SERVICE := housewarming_backend
+SERVICE := backend
 
 .PHONY: shell sh manage up down logs prod-up prod-down prod-logs prod-check
 

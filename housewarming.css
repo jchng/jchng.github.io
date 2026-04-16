@@ -71,6 +71,16 @@
   font-size: 1rem;
 }
 
+.form-row input[type="text"]:disabled,
+.form-row input[type="email"]:disabled,
+.form-row input[type="time"]:disabled,
+.form-row textarea:disabled {
+  border-color: #b8c0c4;
+  background: #eceff1;
+  color: #5f6b73;
+  cursor: not-allowed;
+}
+
 .form-row textarea {
   resize: vertical;
   min-height: 6rem;

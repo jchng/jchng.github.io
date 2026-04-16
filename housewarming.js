@@ -34,6 +34,7 @@ const potluckList = document.getElementById('potluckList');
 const nameInput = document.getElementById('rsvpName');
 const emailInput = document.getElementById('rsvpEmail');
 const emailHint = document.getElementById('emailHint');
+const emailChangeNotice = document.getElementById('emailChangeNotice');
 const arrivalTimeInput = document.getElementById('rsvpArrivalTime');
 const arrivalTimeRow = document.getElementById('arrivalTimeRow');
 const likelyLateRow = document.getElementById('likelyLateRow');
@@ -82,6 +83,7 @@ if (
   nameInput &&
   emailInput &&
   emailHint &&
+  emailChangeNotice &&
   arrivalTimeInput &&
   likelyLateInput &&
   potluckInput &&
@@ -540,12 +542,18 @@ function openFormMode(mode) {
 
   if (mode === 'editing') {
     submitButton.textContent = 'Update RSVP';
-    emailHint.textContent = 'Using the same email so this RSVP can be updated.';
+    nameInput.disabled = true;
+    emailInput.disabled = true;
+    emailHint.textContent = '';
+    setPanelVisibility(emailChangeNotice, false);
     return;
   }
 
   submitButton.textContent = 'Add RSVP';
+  nameInput.disabled = false;
+  emailInput.disabled = false;
   emailHint.textContent = 'Optional. Use the same email later if you want to edit your RSVP.';
+  setPanelVisibility(emailChangeNotice, true);
 }
 
 function resetLookup() {
@@ -563,6 +571,8 @@ function resetFormState() {
   editingAttendeeId = null;
   forcedLateMode = false;
   resetFormFields();
+  nameInput.disabled = false;
+  emailInput.disabled = false;
   likelyLateInput.disabled = false;
   submitButton.disabled = false;
   editModeNotice.textContent = '';
@@ -570,6 +580,7 @@ function resetFormState() {
   submitButton.classList.remove('hidden-panel');
   submitButton.textContent = 'Add RSVP';
   emailHint.textContent = 'Optional. Use the same email later if you want to edit your RSVP.';
+  setPanelVisibility(emailChangeNotice, true);
   syncLikelyLateRule('');
 }
 

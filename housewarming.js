@@ -31,6 +31,7 @@ const cancelFormButton = document.getElementById('cancelFormButton');
 const attendeeCount = document.getElementById('attendeeCount');
 const attendeeList = document.getElementById('attendeeList');
 const potluckList = document.getElementById('potluckList');
+const arrivalHeatmap = document.getElementById('arrivalHeatmap');
 const nameInput = document.getElementById('rsvpName');
 const emailInput = document.getElementById('rsvpEmail');
 const emailHint = document.getElementById('emailHint');
@@ -47,6 +48,8 @@ const editModeNotice = document.getElementById('editModeNotice');
 const submitButton = document.getElementById('submitButton');
 const switchToEditButton = document.getElementById('switchToEditButton');
 const attendanceStatusInputs = Array.from(form?.querySelectorAll('input[name="attendance_status"]') || []);
+const ARRIVAL_HEATMAP_START_HOUR = 11;
+const ARRIVAL_HEATMAP_END_HOUR = 19;
 
 let state = cloneDefaultState();
 let currentMode = 'chooser';
@@ -80,6 +83,7 @@ if (
   attendeeCount &&
   attendeeList &&
   potluckList &&
+  arrivalHeatmap &&
   nameInput &&
   emailInput &&
   emailHint &&
@@ -364,8 +368,24 @@ function cloneDefaultState() {
 }
 
 function render() {
+  renderArrivalHeatmap();
   renderAttendees();
   renderPotluckItems();
+}
+
+function renderArrivalHeatmap() {
+  const buckets = buildArrivalHeatmapBuckets(state.attendees);
+  const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 0);
+
+  arrivalHeatmap.innerHTML = `
+    <div class="arrival-heatmap-bar" role="img" aria-label="${escapeHtml(buildArrivalHeatmapAriaLabel(buckets))}">
+      ${buckets.map((bucket) => renderArrivalHeatmapSegment(bucket, maxCount)).join('')}
+    </div>
+    <div class="arrival-heatmap-labels" aria-hidden="true">
+      <span>${escapeHtml(formatHourLabel(ARRIVAL_HEATMAP_START_HOUR))}</span>
+      <span>${escapeHtml(formatHourLabel(ARRIVAL_HEATMAP_END_HOUR))}</span>
+    </div>
+  `;
 }
 
 function renderEventDetails(event) {
@@ -492,6 +512,7 @@ function lockPrivateSections(message) {
   attendeeCount.textContent = '';
   attendeeList.innerHTML = '<li class="empty-state">Private attendee updates are hidden until a valid invite link is used.</li>';
   potluckList.innerHTML = '<li class="empty-state">Private potluck updates are hidden until a valid invite link is used.</li>';
+  arrivalHeatmap.innerHTML = '';
   privateAccessNotice.textContent = message;
   rsvpAccessNotice.textContent = message;
   privateAccessNotice.classList.remove('hidden-panel');
@@ -772,6 +793,83 @@ function formatTime(timeValue) {
 
   return `${normalizedHours}${normalizedMinutes} ${period}`;
 }
+
+function buildArrivalHeatmapBuckets(attendees) {
+  const buckets = [];
+
+  for (let hour = ARRIVAL_HEATMAP_START_HOUR; hour < ARRIVAL_HEATMAP_END_HOUR; hour += 1) {
+    buckets.push({
+      hour,
+      count: 0,
+    });
+  }
+
+  attendees
+    .filter((attendee) => attendee.attendanceStatus === 'going')
+    .forEach((attendee) => {
+      const bucketIndex = getArrivalHeatmapBucketIndex(attendee.arrivalTime);
+      if (bucketIndex === null) {
+        return;
+      }
+
+      buckets[bucketIndex].count += 1;
+    });
+
+  return buckets;
+}
+
+function getArrivalHeatmapBucketIndex(timeValue) {
+  if (!/^\d{2}:\d{2}$/.test(timeValue)) {
+    return null;
+  }
+
+  const [hoursText] = timeValue.split(':');
+  const hour = Number(hoursText);
+
+  if (hour < ARRIVAL_HEATMAP_START_HOUR || hour >= ARRIVAL_HEATMAP_END_HOUR) {
+    return null;
+  }
+
+  return hour - ARRIVAL_HEATMAP_START_HOUR;
+}
+
+function renderArrivalHeatmapSegment(bucket, maxCount) {
+  const strength = bucket.count === 0
+    ? 0
+    : maxCount <= 1
+      ? 1
+      : bucket.count / maxCount;
+  const arrivalLabel = bucket.count === 1 ? '1 arrival' : `${bucket.count} arrivals`;
+  const segmentLabel = `${formatHourLabel(bucket.hour)} to ${formatHourLabel(bucket.hour + 1)}: ${arrivalLabel}`;
+
+  return `
+    <span
+      class="arrival-heatmap-segment"
+      style="--heat-strength: ${strength.toFixed(2)}"
+      title="${escapeHtml(segmentLabel)}"
+      aria-hidden="true"
+    ></span>
+  `;
+}
+
+function buildArrivalHeatmapAriaLabel(buckets) {
+  const occupiedBuckets = buckets.filter((bucket) => bucket.count > 0);
+
+  if (!occupiedBuckets.length) {
+    return `Arrival time heat map from ${formatHourLabel(ARRIVAL_HEATMAP_START_HOUR)} to ${formatHourLabel(ARRIVAL_HEATMAP_END_HOUR)}. No committed arrivals yet.`;
+  }
+
+  const summary = occupiedBuckets
+    .map((bucket) => `${bucket.count} at ${formatHourLabel(bucket.hour)}`)
+    .join(', ');
+
+  return `Arrival time heat map from ${formatHourLabel(ARRIVAL_HEATMAP_START_HOUR)} to ${formatHourLabel(ARRIVAL_HEATMAP_END_HOUR)}. ${summary}.`;
+}
+
+function formatHourLabel(hourValue) {
+  return formatTime(`${String(hourValue).padStart(2, '0')}:00`);
+}
+
 
 function escapeHtml(value) {
   return value

@@ -38,6 +38,35 @@
   max-width: 36rem;
 }
 
+.arrival-heatmap {
+  max-width: 36rem;
+  margin-bottom: 1rem;
+}
+
+.arrival-heatmap-bar {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.15rem;
+  height: 1.45rem;
+}
+
+.arrival-heatmap-segment {
+  border-radius: 0.2rem;
+  background: hsl(
+    calc(45 - (var(--heat-strength, 0) * 41)),
+    calc(55% + (var(--heat-strength, 0) * 18%)),
+    calc(88% - (var(--heat-strength, 0) * 39%))
+  );
+}
+
+.arrival-heatmap-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  color: #5f6b73;
+  font-size: 0.85rem;
+}
+
 .rsvp-chooser,
 .button-row {
   display: flex;

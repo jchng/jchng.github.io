@@ -50,6 +50,7 @@ const switchToEditButton = document.getElementById('switchToEditButton');
 const attendanceStatusInputs = Array.from(form?.querySelectorAll('input[name="attendance_status"]') || []);
 const ARRIVAL_HEATMAP_START_HOUR = 11;
 const ARRIVAL_HEATMAP_END_HOUR = 19;
+const ARRIVAL_LATE_OFFSET = 1;
 
 let state = cloneDefaultState();
 let currentMode = 'chooser';
@@ -806,7 +807,8 @@ function buildArrivalHeatmapBuckets(attendees) {
   attendees
     .filter((attendee) => attendee.attendanceStatus === 'going')
     .forEach((attendee) => {
-      const bucketIndex = getArrivalHeatmapBucketIndex(attendee.arrivalTime);
+      const normalisedTime = attendee.likelyLate ? giveLateAnHour(attendee.arrivalTime) : attendee.arrivalTime;
+      const bucketIndex = getArrivalHeatmapBucketIndex(normalisedTime);
       if (bucketIndex === null) {
         return;
       }
@@ -815,6 +817,21 @@ function buildArrivalHeatmapBuckets(attendees) {
     });
 
   return buckets;
+}
+
+function giveLateAnHour(timeValue) {
+  if (!/^\d{2}:\d{2}$/.test(timeValue)) {
+    return null;
+  }
+
+  const [hoursText, minutesText] = timeValue.split(':');
+  const newTime = Number(hoursText) + ARRIVAL_LATE_OFFSET + ":" + minutesText;
+
+  if (newTime < ARRIVAL_HEATMAP_START_HOUR || newTime >= ARRIVAL_HEATMAP_END_HOUR) {
+    return null;
+  }
+
+  return newTime;
 }
 
 function getArrivalHeatmapBucketIndex(timeValue) {

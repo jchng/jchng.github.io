@@ -163,7 +163,10 @@ if (
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const formData = new FormData(form);
+    nameInput.disabled = false;
+    emailInput.disabled = false;
+    
+    const formData = new FormData(event.currentTarget);
     const name = (formData.get('name') || '').toString().trim();
     const email = normalizeEmail((formData.get('email') || '').toString());
     const arrivalTime = (formData.get('arrival_time') || '').toString().trim();
@@ -171,10 +174,6 @@ if (
     const likelyLate = formData.get('likely_late') === 'on';
     const potluckItem = (formData.get('potluck_item') || '').toString().trim();
     const notes = (formData.get('notes') || '').toString().trim();
-
-    if (!name || (attendanceStatus !== 'cant_go' && !arrivalTime)) {
-      return;
-    }
 
     const payload = {
       name,
